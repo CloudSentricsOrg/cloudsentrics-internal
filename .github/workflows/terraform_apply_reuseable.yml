@@ -1,0 +1,193 @@
+name: terraform apply
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        description: "The target GitHub Environment name"
+        required: true
+        type: string
+      IN_PROGRESS_LABEL:
+        default: "tf-apply-in-progress"
+        description: "The name of the label to apply when using IN_PROGRESS_LABEL_ADD and IN_PROGRESS_LABEL_REMOVE"
+        type: string
+      IN_PROGRESS_LABEL_ADD:
+        default: false
+        description: "If true, an in-progress label will be added to the PR associated to the workflow run"
+        type: boolean
+      IN_PROGRESS_LABEL_REMOVE:
+        default: false
+        description: "If true, an in-progress label will be removed from the PR associated to the workflow run"
+        type: boolean
+      PLAN_FILE_ARTIFACT:
+        description: "The name of the GitHub artifact for the terraform plan file that will be applied"
+        required: true
+        type: string
+      PROXY_IAM_ROLE_ARN:
+        description: "The IAM ARN for the proxy role that will be used to read/modify TF state"
+        required: true
+        type: string
+      WORKER_IAM_ROLE_ARN:
+        description: "The IAM ARN for the worker role that will be used to manipulate the target account"
+        required: true
+        type: string
+      WORKING_DIRECTORY:
+        description: "The directory containing the target terragrunt.hcl configuration file"
+        required: true
+        type: string
+
+env:
+  AWS_REGION: "us-east-1"
+  TERRAFORM_VERSION: 1.7.4
+  TERRAGRUNT_NON_INTERACTIVE: true
+  TERRAGRUNT_VERSION: 0.54.22
+  TF_CLI_ARGS: "-no-color"
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  apply:
+    name: terraform apply
+    environment: ${{ inputs.ENVIRONMENT }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+        
+    steps:
+      # self-reviews are allowed if there is no planned changes, otherwise it should be prevented
+     # - name: Validate environment approver
+      #  uses: actions/github-script@v7
+       # with:
+        #  script: |
+         #   const PLAN_FILE_ARTIFACT = "${{ inputs.PLAN_FILE_ARTIFACT }}";
+
+         #   if (!PLAN_FILE_ARTIFACT) {
+          #    // there are no pending changes, we don't care if it's a self-approval
+           #   core.notice("apply not needed because there are no changes pending, skipping apply steps");
+#
+ #             return 0;
+  #          }
+
+   #         const approvals = await github.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals', {
+    #          owner: context.repo.owner,
+     #         repo: context.repo.repo,
+      #        run_id: context.runId,
+       #       headers: {
+        #        'Accept': 'application/vnd.github+json',
+         #       'X-GitHub-Api-Version': '2022-11-28'
+          #    }
+           # });
+
+            #if (approvals.data.length == 0) {
+             # core.setFailed("no approvals for this deployment, this is not allowed.");
+              #return 1;
+            #}
+
+           # // approval data is sorted in descending chronological order
+            #const mostRecentApproval = approvals.data[0];
+            #if (mostRecentApproval.state == "approved") {
+            #  const approver = mostRecentApproval.user.login;
+             # const pullRequestOwner = context.payload.pull_request.user.login;
+
+              #const isOwnReview = approver == pullRequestOwner;
+              #if (isOwnReview || !pullRequestOwner) {
+               # core.setFailed(`detected an environment review from the PR owner where CHANGES_PENDING=true, this is not allowed. pullRequestOwner=${pullRequestOwner}, approver=${approver}, isOwnReview=${isOwnReview}`);
+                #return 1;
+              #} else {
+               # core.info(`detected an environment review from someone other than the PR owner where CHANGES_PENDING=true. pullRequestOwner=${pullRequestOwner}, approver=${approver}, isOwnReview=${isOwnReview}`);
+              #}
+            #}
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Configure Git auth for Terraform modules
+        run: |
+          git config --global url."https://x-access-token:${TERRAFORM_MODULES_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          TERRAFORM_MODULES_TOKEN: ${{ secrets.TERRAFORM_MODULES_TOKEN }}
+
+      - name: Setting log level to debug
+        if: runner.debug == '1'
+        run: |
+          echo "setting terraform and terragrunt debug flags because github's debug mode is enabled"
+          echo "TERRAGRUNT_DEBUG=1" >> "$GITHUB_ENV"
+          echo "TERRAGRUNT_LOG_LEVEL=debug" >> "$GITHUB_ENV"
+          echo "TF_LOG=DEBUG" >> "$GITHUB_ENV"
+
+      #- name: Setting worker role for terragrunt
+       # run: |
+        #  echo "TERRAGRUNT_IAM_ROLE=${{ inputs.WORKER_IAM_ROLE_ARN }}" >> "$GITHUB_ENV"
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: true
+
+      - name: Setup terragrunt
+        run: |
+          sudo wget -q -O /bin/terragrunt "https://github.com/gruntwork-io/terragrunt/releases/download/v0.56.0/terragrunt_linux_amd64"
+          sudo chmod +x /bin/terragrunt
+          terragrunt -v
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ inputs.PROXY_IAM_ROLE_ARN }}
+
+      - name: Download tf.plan artifact
+        if: ${{ inputs.PLAN_FILE_ARTIFACT != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: "${{ inputs.PLAN_FILE_ARTIFACT }}"
+          path: "${{ runner.temp }}"
+
+      - name: Add label on PR
+        if: inputs.IN_PROGRESS_LABEL_ADD
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: [
+                  '${{ inputs.IN_PROGRESS_LABEL }}'
+                ],
+                headers: {
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28'
+                }
+              });
+            } catch (error) {
+              core.setFailed(`an error occurred while adding a label to the PR: ${error?.response?.data?.message}`);
+              return 1;
+            }
+
+      - name: terragrunt apply
+        id: apply
+        if: ${{ inputs.PLAN_FILE_ARTIFACT != '' }}
+        continue-on-error: true
+        run: |
+          planFilePath="${{ runner.temp }}/tf.plan"
+          stderrPath="${{ runner.temp }}/stderr.log"
+          stdoutPath="${{ runner.temp }}/stdout.log"
+
+          # files need to exist for 'tee' to write to them
+          touch "$stderrPath"
+          touch "$stdoutPath"
+
+          echo "STDOUT_LOG_PATH=${stdoutPath}" >> "$GITHUB_OUTPUT"
+          echo "STDERR_LOG_PATH=${stderrPath}" >> "$GITHUB_OUTPUT"
+
+          # stdout can be too long for github (exceeding 65k characters) so we dump it to a file to be read in later
+          # however, we want to retain separation of stdout from stderr so we can present the errors on their own
+          # reference: https://stackoverflow.com/a/692407
+          terragrunt apply -auto-approve "${planFilePath}" > >(tee -a "${stdoutPath}") 2> >(tee -a "${stderrPath}" >&2)

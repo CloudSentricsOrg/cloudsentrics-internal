@@ -1,0 +1,158 @@
+name: terraform plan and apply - cloud sentrics internal infrastructure
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "infrastructure/customer-automated-storage-and-secure-sharing/**"
+      - "!infrastructure/customer-automated-storage-and-secure-sharing/**/*.md"
+      - "infrastructure/customer-dashboard/**"
+      - "!infrastructure/customer-dashboard/**/*.md"
+      - "applied/root-prod/af-south-1/customer-automated-storage-and-secure-sharing/**"
+      - "applied/root-prod/af-south-1/customer-dashboard/**"
+      - "applied/**"
+
+permissions:
+  actions: write       # get list of deployment environment approvals
+  contents: write      # commit changes back to the branches
+  deployments: read    # get list of deployment environment approvals
+  id-token: write      # generate the OIDC token for AWS
+  issues: write        # create comments
+  pull-requests: write # create comments
+
+concurrency: automation # only a single PR workflow can run at one time
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 0. Feature flags for the 3 solutions
+  # ---------------------------------------------------------------------------
+  feature_flags:
+    name: Set feature flags for solutions
+    runs-on: ubuntu-latest
+    outputs:
+      enable_automated_sharing: ${{ steps.flags.outputs.enable_automated_sharing }}
+      enable_dashboard: ${{ steps.flags.outputs.enable_dashboard }}
+    steps:
+      - id: flags
+        run: |
+          echo "enable_automated_sharing=true" >> "$GITHUB_OUTPUT" # Automated storage & secure sharing
+          echo "enable_dashboard=true" >> "$GITHUB_OUTPUT" # Customer dashboard
+
+  # ---------------------------------------------------------------------------
+  # 1.Pipeline guards / pre-checks
+  # ---------------------------------------------------------------------------
+  enforce_single_inflight_workflow_run:
+    name: Enforce single inflight workflow
+    uses: ./.github/workflows/enforce_single_inflight_workflow_run.yml
+
+  validate_latest:
+    name: Branch up-to-date check
+    needs: [enforce_single_inflight_workflow_run]
+    uses: ./.github/workflows/validate_branch_has_latest.yml
+
+  kics:
+    name: KICS static analysis scan
+    needs: [validate_latest]
+    uses: ./.github/workflows/terraform_kics.yml
+    with:
+      ENABLE_COMMENTS: true
+      WORKING_DIRECTORY: "./infrastructure/**"
+
+  # ---------------------------------------------------------------------------
+  # 2. AUTOMATED STORAGE & SECURE SHARING
+  # ---------------------------------------------------------------------------
+  automated_sharing_plan:
+    name: Automated-storage-sharing
+    needs:
+      - kics
+      - feature_flags
+    if: ${{ needs.feature_flags.outputs.enable_automated_sharing == 'true' }}
+    uses: ./.github/workflows/terraform_plan_reuseable.yml
+    secrets: inherit
+    with:
+      ENVIRONMENT: "customer-request"
+      PROXY_IAM_ROLE_ARN: "arn:aws:iam::076609871004:role/cloudsentrics_internal_proxy_role"
+      WORKER_IAM_ROLE_ARN: "arn:aws:iam::568986761546:role/cloudsentrics_internal_worker_role"
+      WORKING_DIRECTORY: "applied/root-prod/af-south-1/customer-automated-storage-and-secure-sharing"
+      COMPONENT_NAME: "automated-sharing"
+
+  automated_sharing_wait_before_apply:
+    name: Automated-storage-sharing - wait before apply
+    needs:
+      - automated_sharing_plan
+      - feature_flags
+    if: ${{ needs.feature_flags.outputs.enable_automated_sharing == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 1 minute
+        run: sleep 60
+
+  automated_sharing_apply:
+    name: Automated-storage-sharing
+    needs:
+      - automated_sharing_plan
+      - automated_sharing_wait_before_apply
+      - feature_flags
+    if: ${{ needs.feature_flags.outputs.enable_automated_sharing == 'true' }}
+    uses: ./.github/workflows/terraform_apply_reuseable.yml
+    secrets: inherit
+    with:
+      ENVIRONMENT: "customer-request-deploy"
+      PLAN_FILE_ARTIFACT: "${{ needs.automated_sharing_plan.outputs.PLAN_FILE_ARTIFACT }}"
+      PROXY_IAM_ROLE_ARN: "arn:aws:iam::076609871004:role/cloudsentrics_internal_proxy_role"
+      WORKER_IAM_ROLE_ARN: "arn:aws:iam::568986761546:role/cloudsentrics_internal_worker_role"
+      WORKING_DIRECTORY: "applied/root-prod/af-south-1/customer-automated-storage-and-secure-sharing"
+
+  # ---------------------------------------------------------------------------
+  # 3. CUSTOMER DASHBOARD
+  # ---------------------------------------------------------------------------
+  dashboard_plan:
+    name: Customer-dashboard
+    needs:
+      - kics
+      - feature_flags
+      - automated_sharing_apply
+    if: ${{ always() && needs.feature_flags.outputs.enable_dashboard == 'true' && (needs.automated_sharing_apply.result == 'success' || needs.automated_sharing_apply.result == 'skipped') }}
+    uses: ./.github/workflows/terraform_plan_reuseable.yml
+    secrets: inherit
+    with:
+      ENVIRONMENT: "customer-request"
+      PROXY_IAM_ROLE_ARN: "arn:aws:iam::076609871004:role/cloudsentrics_internal_proxy_role"
+      WORKER_IAM_ROLE_ARN: "arn:aws:iam::568986761546:role/cloudsentrics_internal_worker_role"
+      WORKING_DIRECTORY: "applied/root-prod/af-south-1/customer-dashboard"
+      COMPONENT_NAME: "dashboard"
+
+  dashboard_wait_before_apply:
+    name: Customer-dashboard - wait before apply
+    needs:
+      - dashboard_plan
+      - feature_flags
+    if: ${{ needs.feature_flags.outputs.enable_dashboard == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 1 minute
+        run: sleep 60
+
+  dashboard_apply:
+    name: Customer-dashboard
+    needs:
+      - dashboard_plan
+      - dashboard_wait_before_apply
+      - feature_flags
+    if: ${{ needs.feature_flags.outputs.enable_dashboard == 'true' }}
+    uses: ./.github/workflows/terraform_apply_reuseable.yml
+    secrets: inherit
+    with:
+      ENVIRONMENT: "customer-request-deploy"
+      PLAN_FILE_ARTIFACT: "${{ needs.dashboard_plan.outputs.PLAN_FILE_ARTIFACT }}"
+      PROXY_IAM_ROLE_ARN: "arn:aws:iam::076609871004:role/cloudsentrics_internal_proxy_role"
+      WORKER_IAM_ROLE_ARN: "arn:aws:iam::568986761546:role/cloudsentrics_internal_worker_role"
+      WORKING_DIRECTORY: "applied/root-prod/af-south-1/customer-dashboard"

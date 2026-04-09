@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Sentrics — Secure Portal</title>
+  <link rel="icon" type="image/png" href="cloudsentrics-logo.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #f1f5f9; color: #1e293b; }
+    .nav { background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; }
+    .nav .brand { display: flex; align-items: center; gap: 10px; }
+    .nav .brand img { height: 36px; }
+    .nav .brand h1 { color: #fff; font-size: 20px; font-weight: 700; }
+    .nav .user-info { color: rgba(255,255,255,0.85); font-size: 14px; display: flex; align-items: center; gap: 12px; }
+    .nav .signout-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .nav .signout-btn:hover { background: rgba(255,255,255,0.3); }
+    .login-container { max-width: 420px; margin: 0 auto; background: #fff; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+    .login-page-bg { min-height: 100vh; background: linear-gradient(135deg, #1e3a8a, #1e40af, #2563eb); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    .login-slogan { text-align: center; margin-top: 32px; }
+    .login-slogan img { height: 40px; margin-bottom: 8px; }
+    .login-slogan p { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+    .login-slogan .brand-name { color: #fff; }
+    .login-slogan .slogan { color: #93c5fd; font-size: 16px; font-weight: 500; margin-top: 4px; }
+    .login-container .logo { text-align: center; margin-bottom: 20px; }
+    .login-container .logo img { max-height: 80px; max-width: 200px; object-fit: contain; }
+    .login-container h2 { text-align: center; color: #1e40af; margin-bottom: 4px; font-size: 24px; }
+    .login-container .subtitle { text-align: center; color: #64748b; margin-bottom: 24px; font-size: 15px; }
+    .login-container input { width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 12px; }
+    .login-container input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .pw-field { position: relative; }
+    .pw-field input { width: 100%; padding-right: 44px; }
+    .pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #94a3b8; padding: 4px; }
+    .pw-toggle:hover { color: #475569; }
+    .login-container .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 8px; font-size: 17px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+    .login-container .btn:hover { opacity: 0.9; }
+    .login-container .error { color: #dc2626; font-size: 14px; text-align: center; margin-bottom: 12px; display: none; }
+    .login-container .footer-text { text-align: center; margin-top: 20px; font-size: 15px; color: #1e40af; font-weight: 600; }
+    .welcome-banner { background: linear-gradient(135deg, #1e40af, #3b82f6, #0ea5e9); padding: 28px 32px; color: #fff; }
+    .welcome-banner h2 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+    .welcome-banner p { font-size: 16px; color: rgba(255,255,255,0.8); }
+    .dashboard-layout { display: flex; min-height: calc(100vh - 56px); }
+    .sidebar { width: 240px; background: #fff; border-right: 1px solid #e2e8f0; padding: 20px 0; flex-shrink: 0; }
+    .sidebar .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 24px; cursor: pointer; font-size: 15px; font-weight: 500; color: #475569; transition: all 0.2s ease; border-left: 3px solid transparent; }
+    .sidebar .nav-item:hover { background: #f0f9ff; color: #1e40af; }
+    .sidebar .nav-item.active { background: #eff6ff; color: #1e40af; font-weight: 700; border-left-color: #1e40af; }
+    .sidebar .nav-section { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; padding: 16px 24px 6px; font-weight: 700; }
+    .sidebar .nav-section.files { color: #3b82f6; }
+    .sidebar .nav-section.delivery { color: #16a34a; }
+    .sidebar .nav-section.admin { color: #7c3aed; }
+    .sidebar .nav-section.support { color: #f59e0b; }
+    .content-area { flex: 1; padding: 24px 32px; max-width: 1200px; }
+    .card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,.06); margin-bottom: 24px; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card h3 { color: #1e40af; margin-bottom: 8px; font-size: 22px; }
+    .card .desc { color: #3b82f6; font-size: 17px; font-weight: 500; margin-bottom: 20px; }
+    .card .count { color: #64748b; font-size: 14px; margin-bottom: 16px; }
+    .upload-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 48px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .upload-area:hover { border-color: #3b82f6; background: #f0f9ff; }
+    .upload-area.dragover { border-color: #3b82f6; background: #eff6ff; }
+    .upload-area .icon { font-size: 48px; margin-bottom: 12px; }
+    .upload-area p { color: #64748b; font-size: 17px; }
+    .upload-area .formats { color: #94a3b8; font-size: 14px; margin-top: 8px; }
+    .upload-status { margin-top: 16px; padding: 14px 16px; border-radius: 8px; display: none; font-size: 15px; font-weight: 500; }
+    .upload-status.success { display: block; background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; font-size: 16px; }
+    .upload-status.error { display: block; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .upload-status.loading { display: block; background: #eff6ff; color: #1e40af; border: 1px solid #dbeafe; }
+    .search-box { width: 100%; padding: 14px 18px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; margin-bottom: 16px; }
+    .search-box:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8fafc; color: #1e40af; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+    td { padding: 16px 18px; border-bottom: 1px solid #f1f5f9; font-size: 16px; color: #334155; }
+    tr:nth-child(even) { background: #fafbfc; }
+    tr:hover { background: #f0f9ff; transition: background 0.15s ease; }
+    .empty-state { text-align: center; padding: 48px; color: #94a3b8; }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 16px; }
+    .footer { text-align: center; padding: 24px; color: #1e40af; font-size: 17px; font-weight: 600; }
+    .footer strong { color: #1e40af; }
+    .link-btn { background: none; border: none; color: #3b82f6; font-size: 14px; cursor: pointer; font-weight: 600; padding: 0; }
+    .link-btn:hover { text-decoration: underline; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .modal { background: #fff; border-radius: 16px; padding: 32px; max-width: 420px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+    .modal h3 { color: #1e40af; margin-bottom: 16px; font-size: 20px; }
+    .modal input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; margin-bottom: 12px; }
+    .modal input:focus { outline: none; border-color: #3b82f6; }
+    .modal .btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+    .modal .btn-cancel { background: #e2e8f0; color: #475569; }
+    .modal .msg { font-size: 14px; margin-bottom: 12px; }
+    .modal .msg.success { color: #16a34a; }
+    .modal .msg.error { color: #dc2626; }
+    .hidden { display: none; }
+    .breadcrumb { margin-bottom: 16px; font-size: 16px; color: #3b82f6; }
+    .breadcrumb span { cursor: pointer; font-weight: 600; }
+    .breadcrumb span:hover { text-decoration: underline; }
+    .folder-row { cursor: pointer; }
+    .folder-row:hover { background: #eff6ff !important; }
+    .btn-download { background: #16a34a; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 4px; transition: opacity 0.2s; }
+    .btn-download:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-delete { background: #dc2626; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.2s; }
+    .btn-delete:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-restore { background: #f59e0b; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.2s; }
+    .btn-restore:hover { opacity: 0.85; transform: translateY(-1px); }
+    .folder-select { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; margin-bottom: 12px; width: 100%; }
+    .folder-select:focus { outline: none; border-color: #3b82f6; }
+    .btn-action { background: #3b82f6; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; margin: 2px; transition: all 0.15s; display: inline-block; line-height: 1.4; vertical-align: middle; }
+    .btn-action:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-action.warn { background: #f59e0b; }
+    .btn-action.danger { background: #dc2626; }
+    .btn-action.success { background: #16a34a; }
+    .btn-create { display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; margin-bottom: 16px; transition: opacity 0.2s; }
+    .btn-create:hover { opacity: 0.9; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+    .badge.admin { background: #dbeafe; color: #1e40af; }
+    .badge.user { background: #f1f5f9; color: #64748b; }
+    .badge.active { background: #dcfce7; color: #16a34a; }
+    .badge.disabled { background: #fef2f2; color: #dc2626; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 15px; color: #475569; }
+    .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; }
+    .new-pw-form { margin-top: 16px; }
+    .new-pw-form p { color: #64748b; font-size: 14px; margin-bottom: 12px; }
+    .mfa-setup { text-align: center; margin-top: 16px; }
+    .mfa-setup .qr-container { background: #fff; display: inline-block; padding: 16px; border-radius: 12px; border: 2px solid #e2e8f0; margin: 16px 0; }
+    .mfa-setup .secret-key { font-family: monospace; font-size: 13px; color: #475569; background: #f1f5f9; padding: 8px 12px; border-radius: 6px; margin: 8px 0; word-break: break-all; }
+    .mfa-setup h3 { color: #1e40af; font-size: 20px; margin-bottom: 8px; }
+    .mfa-setup p { color: #64748b; font-size: 14px; margin-bottom: 12px; }
+    .mfa-setup .step { display: flex; align-items: flex-start; gap: 12px; text-align: left; margin: 12px 0; padding: 12px; background: #f8fafc; border-radius: 8px; }
+    .mfa-setup .step-num { background: #1e40af; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .mfa-setup .step-text { font-size: 14px; color: #334155; }
+    .mfa-code-input { width: 200px; text-align: center; font-size: 24px; letter-spacing: 8px; font-weight: 700; padding: 14px; border: 2px solid #cbd5e1; border-radius: 8px; margin: 12px auto; display: block; }
+    .mfa-code-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .badge.mfa-on { background: #dcfce7; color: #16a34a; }
+    .badge.mfa-off { background: #fef3c7; color: #92400e; }
+    .folder-tree { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; max-height: 250px; overflow-y: auto; margin-bottom: 12px; }
+    .folder-tree-item { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 14px; color: #334155; }
+    .folder-tree-item.depth-1 { padding-left: 20px; }
+    .folder-tree-item.depth-2 { padding-left: 40px; }
+    .folder-tree-item.depth-3 { padding-left: 60px; }
+    .folder-toggle { cursor: pointer; font-size: 12px; width: 16px; text-align: center; color: #64748b; user-select: none; }
+    .folder-toggle:hover { color: #1e40af; }
+    .folder-tree-item input[type="checkbox"] { width: 16px; height: 16px; }
+    .folder-tree-label { font-size: 14px; }
+    .access-tag { display: inline-block; background: #eff6ff; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 1px 2px; }
+    .access-full { background: #dcfce7; color: #16a34a; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-overlay { text-align: center; padding: 48px; color: #64748b; }
+    .loading-overlay .spinner { width: 36px; height: 36px; margin-bottom: 12px; }
+    .loading-overlay p { font-size: 15px; margin-top: 8px; }
+    .session-banner { position: fixed; top: 0; left: 0; right: 0; background: #fef3c7; color: #92400e; padding: 10px 24px; text-align: center; font-size: 14px; font-weight: 600; z-index: 200; display: none; }
+    .session-banner button { background: #1e40af; color: #fff; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-left: 12px; }
+    .preview-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 150; }
+    .preview-overlay.active { display: flex; }
+    .preview-container { background: #fff; border-radius: 16px; max-width: 90vw; max-height: 90vh; overflow: auto; position: relative; }
+    .preview-container .close-btn { position: absolute; top: 12px; right: 12px; background: #dc2626; color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; font-weight: 700; z-index: 10; }
+    .preview-container iframe, .preview-container img { max-width: 85vw; max-height: 85vh; display: block; }
+    .btn-preview { background: #8b5cf6; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; margin-right: 4px; transition: opacity 0.2s; }
+    .btn-preview:hover { opacity: 0.85; transform: translateY(-1px); }
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 24px; border-radius: 10px; font-size: 15px; font-weight: 600; z-index: 200; animation: slideIn 0.3s ease; }
+    .toast.success { background: #16a34a; color: #fff; }
+    .toast.error { background: #dc2626; color: #fff; }
+    .toast.info { background: #1e40af; color: #fff; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .pw-strength { height: 6px; border-radius: 3px; margin-bottom: 12px; background: #e2e8f0; overflow: hidden; }
+    .pw-strength-bar { height: 100%; border-radius: 3px; transition: width 0.3s, background 0.3s; }
+    .pw-strength-text { font-size: 12px; margin-bottom: 8px; }
+    .empty-action-btn { display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 4px; text-decoration: none; }
+    .empty-action-btn:hover { opacity: 0.9; }
+    .upload-destination { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px; font-size: 14px; color: #1e40af; font-weight: 600; }
+    .stat-cards { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat-card { flex: 1; min-width: 180px; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; padding: 24px; text-align: center; }
+    .stat-card .stat-icon { font-size: 32px; margin-bottom: 8px; }
+    .stat-card .stat-label { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #1e40af; margin-top: 4px; }
+    .folder-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .folder-bar .folder-name { width: 160px; font-size: 14px; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .folder-bar .bar-track { flex: 1; height: 20px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+    .folder-bar .bar-fill { height: 100%; background: linear-gradient(135deg, #1e40af, #3b82f6); border-radius: 10px; transition: width 0.5s ease; }
+    .folder-bar .folder-size { width: 80px; text-align: right; font-size: 13px; font-weight: 600; color: #64748b; }
+    .bucket-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .bucket-row .bucket-name { width: 280px; font-size: 13px; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bucket-row .bar-track { flex: 1; height: 24px; background: #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .bucket-row .bar-fill { height: 100%; border-radius: 12px; transition: width 0.5s ease; }
+    .bucket-row .bucket-size { width: 100px; text-align: right; font-size: 13px; font-weight: 600; color: #64748b; }
+    .bucket-row .bucket-pct { width: 50px; text-align: right; font-size: 12px; color: #94a3b8; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 16px; justify-content: center; padding: 12px 0; min-height: 160px; overflow-x: auto; max-width: 100%; }
+    .bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .bar-col .bar-value { font-size: 12px; font-weight: 700; color: #1e40af; }
+    .bar-col .bar-block { width: 60px; border-radius: 8px 8px 0 0; transition: height 0.5s ease; min-height: 4px; }
+    .bar-col .bar-label { font-size: 11px; color: #64748b; text-align: center; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .graph-container { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 8px; overflow-x: auto; }
+    .graph { display: flex; min-height: 220px; }
+    .graph-y-axis { display: flex; flex-direction: column; justify-content: space-between; padding-right: 8px; min-width: 60px; text-align: right; }
+    .graph-y-label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+    .graph-body { flex: 1; position: relative; border-left: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; }
+    .graph-gridline { position: absolute; left: 0; right: 0; border-top: 1px dashed #e2e8f0; }
+    .graph-bars { display: flex; align-items: flex-end; justify-content: space-around; height: 100%; padding: 0 12px; gap: 8px; }
+    .graph-bar { display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 80px; }
+    .graph-bar-block { width: 100%; border-radius: 6px 6px 0 0; transition: height 0.5s ease; min-height: 2px; }
+    .graph-bar-value { font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+    .graph-bar-label { font-size: 10px; color: #64748b; text-align: center; margin-top: 8px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .graph-bar-sublabel { font-size: 10px; color: #94a3b8; text-align: center; }
+    .notif-bell { position: relative; cursor: pointer; font-size: 26px; margin-right: 12px; filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)); transition: transform 0.2s; }
+    .notif-bell:hover { transform: scale(1.15); }
+    .notif-badge { position: absolute; top: -8px; right: -10px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #1e40af; }
+    .notif-dropdown { position: absolute; top: 100%; right: 0; width: 360px; max-height: 400px; overflow-y: auto; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); z-index: 100; display: none; }
+    .notif-dropdown.open { display: block; }
+    .notif-header { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 700; color: #1e40af; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .notif-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
+    .notif-item.unread { background: #eff6ff; }
+    .notif-item .notif-time { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+    .notif-empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 14px; }
+    .notif-mark-btn { font-size: 12px; color: #3b82f6; cursor: pointer; background: none; border: none; font-weight: 600; }
+    .actions-item { padding: 10px 16px; font-size: 14px; color: #334155; cursor: pointer; transition: background 0.15s; }
+    .actions-item:hover { background: #f0f9ff; color: #1e40af; }
+    .home-greeting { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .home-date { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+    .home-summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .home-stat { flex: 1; min-width: 140px; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; padding: 20px; text-align: center; }
+    .home-stat .stat-num { font-size: 32px; font-weight: 700; color: #1e40af; }
+    .home-stat .stat-label { font-size: 15px; color: #475569; margin-top: 4px; font-weight: 500; }
+    .home-stat .stat-icon { font-size: 28px; margin-bottom: 4px; }
+    .home-activity { margin-top: 8px; }
+    .home-activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+    .home-activity-item .act-icon { font-size: 20px; flex-shrink: 0; }
+    .home-activity-item .act-text { font-size: 14px; color: #334155; }
+    .home-activity-item .act-time { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .home-section-title { font-size: 16px; font-weight: 700; color: #1e40af; margin-bottom: 12px; }
+    .home-security { margin-top: 24px; padding: 14px 18px; background: #f0fdf4; border-radius: 8px; font-size: 15px; color: #16a34a; font-weight: 600; }
+    .hamburger { display: none; background: none; border: none; font-size: 24px; color: #fff; cursor: pointer; padding: 4px 8px; }
+    @media (max-width: 768px) {
+      .hamburger { display: block; }
+      .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 50; transition: left 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+      .sidebar.open { left: 0; }
+      .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); z-index: 49; }
+      .sidebar-overlay.open { display: block; }
+      .content-area { padding: 16px; }
+      .dashboard-layout { display: block; }
+      .stat-cards { flex-direction: column; }
+      .nav { padding: 10px 16px; }
+      .welcome-banner { padding: 16px; }
+      .welcome-banner h2 { font-size: 20px; }
+      table { font-size: 13px; }
+      td, th { padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginPage">
+    <div class="login-page-bg">
+      <div class="login-container">
+        <div class="logo"><img src="cloudsentrics-logo.png" alt="Cloud Sentrics"></div>
+        <h2>Welcome to Your Secure Portal</h2>
+        
+        <div id="loginError" class="error"></div>
+        <input type="email" id="loginEmail" placeholder="Email address" autocomplete="email">
+        <div class="pw-field">
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+        <button type="button" class="pw-toggle" onclick="toggleLoginPw()">👁</button>
+      </div>
+        <button class="btn" onclick="handleLogin()">Sign In</button>
+        <div id="newPasswordForm" class="new-pw-form hidden">
+          <p>Your temporary password has expired. Please set a new password.</p>
+          <input type="password" id="newPwInput" placeholder="New password" oninput="updatePwStrength()">
+          <div class="pw-strength"><div id="pwStrengthBar" class="pw-strength-bar" style="width:0%;"></div></div>
+          <div id="pwStrengthText" class="pw-strength-text" style="color:#94a3b8;">Min 8 chars, uppercase, lowercase, number</div>
+          <input type="password" id="newPwConfirm" placeholder="Confirm new password" oninput="checkPwMatch()">
+          <div id="pwMatchStatus" style="font-size:13px;font-weight:600;margin-bottom:8px;"></div>
+          <button class="btn" onclick="handleNewPassword()">Set Password & Sign In</button>
+        </div>
+        <div id="mfaSetupForm" class="mfa-setup hidden">
+          <h3>🔐 Set Up Two-Factor Authentication</h3>
+          <p>Scan the QR code below with your authenticator app</p>
+          <div class="qr-container"><canvas id="qrCanvas"></canvas></div>
+          <p style="font-size:12px;color:#94a3b8;">Can't scan? Enter this key manually:</p>
+          <div class="secret-key" id="mfaSecretKey"></div>
+          <div class="step"><div class="step-num">1</div><div class="step-text">Open <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, or any TOTP app</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Scan the QR code or enter the key manually</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Enter the 6-digit code from your app below</div></div>
+          <input type="text" class="mfa-code-input" id="mfaSetupCode" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <button class="btn" onclick="verifyMfaSetup()">Verify & Complete Setup</button>
+          <div id="mfaSetupError" class="error" style="margin-top:8px;"></div>
+        </div>
+        <div id="mfaVerifyForm" class="hidden" style="margin-top:16px;text-align:center;">
+          <h3 style="color:#1e40af;font-size:20px;margin-bottom:8px;">🔐 Two-Factor Authentication</h3>
+          <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Enter the 6-digit code from your authenticator app</p>
+          <input type="text" class="mfa-code-input" id="mfaVerifyCode" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <button class="btn" onclick="verifyMfa()">Verify</button>
+          <div id="mfaVerifyError" class="error" style="margin-top:8px;"></div>
+        </div>
+        <div style="text-align:center;margin-top:12px;"><button class="link-btn" onclick="showForgotPassword()">Forgot Password?</button></div>
+        <p class="footer-text"></p>
+      </div>
+      <div class="login-slogan">
+        <p class="brand-name">Cloud Sentrics</p>
+        <p class="slogan">Securing Tomorrow, One Cloud At A Time!</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboardPage" class="hidden">
+    <div class="nav">
+      <div class="brand">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <img src="cloudsentrics-logo.png" alt="CS" style="height:36px;background:#fff;border-radius:6px;padding:2px 4px;">
+        <span style="color:#fff;font-weight:700;font-size:16px;">Cloud Sentrics</span>
+      </div>
+      <div class="user-info">
+        <span id="userEmail"></span>
+        <div id="notifBell" class="notif-bell hidden" onclick="toggleNotifications()" style="display:none;">
+          🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+          <div id="notifDropdown" class="notif-dropdown"></div>
+        </div>
+        <button class="link-btn" style="color:rgba(255,255,255,0.85);" onclick="showChangePassword()">Change Password</button>
+        <button class="signout-btn" onclick="handleLogout()">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="welcome-banner">
+      <h2>{{ORG_NAME}}</h2>
+      <p style="font-size:16px;color:rgba(255,255,255,0.8);">🔒 Securely store, share, and track your files, protected with enterprise-grade encryption.</p>
+    </div>
+
+    <div class="dashboard-layout">
+      <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+      <div id="sidebar" class="sidebar">
+        <div class="nav-section files">File Management</div>
+        <div class="nav-item" onclick="showTab('home')">🏠 Home</div>
+        <div class="nav-item" onclick="showTab('storage')">📂 Storage Browser</div>
+        <div class="nav-item" onclick="showTab('deleted')">🗑️ Deleted Files</div>
+        <div class="nav-item" onclick="showTab('upload-storage')">📤 Upload to Storage</div>
+        <div class="nav-section delivery">Delivery</div>
+        <div class="nav-item" onclick="showTab('upload')">📁 Upload Spreadsheet</div>
+        <div class="nav-item" onclick="showTab('history')">📋 Delivery History</div>
+        <div id="adminSection" class="hidden">
+          <div class="nav-section admin">Admin</div>
+          <div class="nav-item" onclick="showTab('users')">👥 User Management</div>
+          <div class="nav-item" onclick="showTab('activity')">📊 Activity Log</div>
+          <div class="nav-item" onclick="showTab('snapshot')">📸 Storage Snapshot</div>
+          <div class="nav-item" onclick="showTab('credential-report')">📋 User Credential Report</div>
+        </div>
+        <div class="nav-section support">Support</div>
+        <div class="nav-item" onclick="window.open('https://onboardingportal.cloudsentrics.org/','_blank')">🎧 Contact Support</div>
+      </div>
+
+      <div class="content-area">
+        <div id="homeTab" class="card hidden">
+          <div id="homeContent"><div class="loading-overlay"><div class="spinner"></div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="storageTab" class="card hidden">
+          <h3>Storage Browser</h3>
+          <p class="desc">Browse, upload, download, and manage your files securely.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+            <input type="text" class="search-box" id="storageSearch" placeholder="Search files..." style="display:none;flex:1;margin-bottom:0;" oninput="filterStorage()">
+            <button class="btn-create" style="margin-bottom:0;white-space:nowrap;margin-left:auto;" onclick="showStorageCreateFolder()">+ New Folder</button>
+            <button id="uploadHereBtn" class="btn-create" style="margin-bottom:0;white-space:nowrap;background:#16a34a;display:none;" onclick="document.getElementById('storageDirectUpload').click()">📤 Upload Here</button>
+            <input type="file" id="storageDirectUpload" style="display:none" onchange="handleDirectUpload(event)">
+          </div>
+          <div id="storageCreateFolderRow" class="hidden" style="display:none;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+            <select class="folder-select" id="storageParentFolder" style="margin-bottom:0;flex:1;min-width:200px;"><option value="">/ (root)</option></select>
+            <input type="text" id="storageNewFolderName" placeholder="New folder name" style="flex:1;min-width:200px;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;">
+            <button class="btn-create" style="margin-bottom:0;" onclick="createStorageFolder()">Create</button>
+            <button class="btn-action" style="background:#e2e8f0;color:#475569;" onclick="hideStorageCreateFolder()">Cancel</button>
+          </div>
+          <div id="breadcrumb" class="breadcrumb"></div>
+          <div id="storageContent"><div class="empty-state"><div class="icon">📂</div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="deletedTab" class="card hidden">
+          <h3>Deleted Files</h3>
+          <p class="desc">View recently deleted files and restore them with one click.</p>
+          <div id="deletedContent"><div class="empty-state"><div class="icon">🗑️</div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="uploadStorageTab" class="card hidden">
+          <h3>Upload to Storage</h3>
+          <p class="desc">Upload files directly to your organization's secure storage.</p>
+          <p style="color:#475569;font-size:14px;font-weight:600;margin-bottom:6px;">Upload to folder:</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <select class="folder-select" id="storageFolderSelect" style="margin-bottom:0;flex:1;" onchange="updateUploadDestination()"><option value="">/ (root)</option></select>
+            <button class="btn-create" style="margin-bottom:0;white-space:nowrap;" onclick="showCreateFolder()">+ New Folder</button>
+          </div>
+          <div id="uploadDestination" class="upload-destination">📁 Uploading to: / (root)</div>
+          <div id="createFolderRow" class="hidden" style="display:none;gap:8px;margin-bottom:12px;">
+            <input type="text" id="newFolderName" placeholder="Enter folder path (e.g. reports/2026)" style="flex:1;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;">
+            <button class="btn-create" style="margin-bottom:0;" onclick="createFolder()">Create</button>
+            <button class="btn-action" style="background:#e2e8f0;color:#475569;" onclick="hideCreateFolder()">Cancel</button>
+          </div>
+          <div class="upload-area" id="storageUploadArea" onclick="document.getElementById('storageFileInput').click()">
+            <div class="icon">📤</div>
+            <p>Drag & drop files here, or click to browse</p>
+            <p class="formats">Any file type accepted</p>
+          </div>
+          <input type="file" id="storageFileInput" style="display:none" onchange="handleStorageFileSelect(event)">
+          <div id="storageUploadStatus" class="upload-status"></div>
+        </div>
+
+        <div id="uploadTab" class="card hidden">
+          <h3>Secure Delivery Center</h3>
+          <p class="desc">Upload your recipient spreadsheet to securely deliver files to recipients.</p>
+          <p style="color:#475569;font-size:14px;font-weight:600;margin-bottom:12px;">Uploading to: 📁 secure-delivery-center/</p>
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <div class="icon">📁</div>
+            <p>Drag & drop your spreadsheet here, or click to browse</p>
+            <p class="formats">Supports CSV, JSON, and Excel (.xlsx)</p>
+          </div>
+          <input type="file" id="fileInput" accept=".csv,.json,.xlsx" style="display:none" onchange="handleFileSelect(event)">
+          <div id="uploadStatus" class="upload-status"></div>
+          <div id="recentUploadsSection" style="margin-top:20px;" class="hidden">
+            <h3 style="font-size:16px;color:#1e40af;margin-bottom:12px;">Recent Uploads</h3>
+            <div id="deliveryFolderContent"><div class="loading-overlay"><div class="spinner"></div><p>Loading...</p></div></div>
+          </div>
+        </div>
+
+        <div id="historyTab" class="card hidden">
+          <h3>Delivery History</h3>
+          <p class="desc">Track and monitor all secure file deliveries to your recipients.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+            <div id="historyCount" class="count" style="flex:1;margin-bottom:0;"></div>
+            <button class="btn-action" onclick="exportHistory('csv')">Export CSV</button>
+            <button class="btn-action" onclick="exportHistory('json')">Export JSON</button>
+            <button class="btn-action" onclick="exportHistory('pdf')">Export PDF</button>
+          </div>
+          <input type="text" class="search-box" id="historySearch" placeholder="Search by recipient, file, or ID..." oninput="filterHistory()">
+          <div id="historyContent"><div class="empty-state"><div class="icon">📋</div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="usersTab" class="card hidden">
+          <h3>User Management</h3>
+          <p class="desc">Create and manage users, assign roles, and control folder access.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div id="usersCount" class="count" style="margin-bottom:0;font-weight:700;font-size:16px;"></div>
+            <div style="display:flex;gap:8px;">
+              <div style="position:relative;">
+                <button class="btn-create" style="margin-bottom:0;background:#475569;opacity:0.4;pointer-events:none;" id="actionsBtn" onclick="toggleActionsMenu()">Actions ▼</button>
+                <div id="actionsMenu" style="display:none;position:absolute;top:100%;right:0;background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:50;min-width:180px;margin-top:4px;">
+                  <div style="padding:8px 0;">
+                    <div class="actions-item" onclick="actionOnSelected('make-admin')">Make Admin</div>
+                    <div class="actions-item" onclick="actionOnSelected('remove-admin')">Remove Admin</div>
+                    <div class="actions-item" onclick="actionOnSelected('edit-access')">Edit Access</div>
+                    <div class="actions-item" onclick="actionOnSelected('change-email')">Change Email</div>
+                    <div class="actions-item" onclick="actionOnSelected('disable')">Disable</div>
+                    <div class="actions-item" onclick="actionOnSelected('enable')">Enable</div>
+                    <div class="actions-item" onclick="actionOnSelected('reset-mfa')">Reset MFA</div>
+                    <div style="border-top:1px solid #e2e8f0;margin:4px 0;"></div>
+                    <div class="actions-item" style="color:#dc2626;" onclick="deleteSelectedUsers()">Delete</div>
+                  </div>
+                </div>
+              </div>
+              <button class="btn-create" style="margin-bottom:0;" onclick="showCreateUser()">+ Create User</button>
+            </div>
+          </div>
+          <div id="usersContent"><div class="empty-state"><div class="icon">👥</div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="activityTab" class="card hidden">
+          <h3>Activity Log</h3>
+          <p class="desc">Monitor and track all user actions, uploads, downloads, and changes.</p>
+          <input type="text" class="search-box" id="activitySearch" placeholder="Search by user, file, or action..." oninput="filterActivity()">
+          <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+            <div id="activityCount" class="count" style="flex:1;margin-bottom:0;"></div>
+            <button class="btn-action" onclick="exportActivity('csv')">Export CSV</button>
+            <button class="btn-action" onclick="exportActivity('json')">Export JSON</button>
+            <button class="btn-action" onclick="exportActivity('pdf')">Export PDF</button>
+          </div>
+          <div id="activityContent"><div class="empty-state"><div class="icon">📊</div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="snapshotTab" class="card hidden">
+          <h3>Storage Snapshot</h3>
+          <p class="desc">Real-time storage usage across your account.</p>
+          <div id="snapshotContent"><div class="loading-overlay"><div class="spinner"></div><p>Loading...</p></div></div>
+        </div>
+
+        <div id="credentialReportTab" class="card hidden">
+          <h3>User Credential Report</h3>
+          <p class="desc">Download a report of all users, their roles, access, and security status.</p>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin-bottom:16px;">
+            <p style="font-size:17px;color:#1e40af;font-weight:700;margin-bottom:14px;">The report includes:</p>
+            <ul style="font-size:16px;color:#334155;margin:0;padding-left:0;line-height:2.4;list-style:none;">
+              <li>👤 User name and email</li>
+              <li>🔑 Role (Admin / User)</li>
+              <li>🔐 MFA status (Enabled / Not Set Up)</li>
+              <li>📁 Folder access and permission level</li>
+              <li>✅ Account status (Active / Disabled)</li>
+              <li>🕐 Last login date</li>
+              <li>📅 Account creation date</li>
+            </ul>
+          </div>
+          <div id="credentialReportStatus" style="margin-bottom:16px;"></div>
+          <div id="credentialReportActions">
+            <button class="btn-create" onclick="generateCredentialReport()">Generate Credential Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><p>Cloud Sentrics v1.0 — <strong>Securing Tomorrow, One Cloud At A Time!</strong></p></div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotModal" class="modal-overlay hidden" onclick="if(event.target===this)closeForgotPassword()">
+    <div class="modal">
+      <h3>Reset Password</h3>
+      <div id="forgotMsg" class="msg"></div>
+      <div id="forgotStep1">
+        <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Enter your email and we'll send you a verification code.</p>
+        <input type="email" id="forgotEmail" placeholder="Email address">
+        <button class="btn" onclick="sendResetCode()">Send Code</button>
+        <button class="btn btn-cancel" onclick="closeForgotPassword()">Cancel</button>
+      </div>
+      <div id="forgotStep2" class="hidden">
+        <p style="color:#64748b;font-size:14px;margin-bottom:16px;">Enter the code sent to your email and your new password.</p>
+        <input type="text" id="resetCode" placeholder="Verification code">
+        <input type="password" id="newPassword" placeholder="New password">
+        <input type="password" id="confirmPassword" placeholder="Confirm new password">
+        <button class="btn" onclick="confirmReset()">Reset Password</button>
+        <button class="btn btn-cancel" onclick="closeForgotPassword()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="changeModal" class="modal-overlay hidden" onclick="if(event.target===this)closeChangePassword()">
+    <div class="modal">
+      <h3>Change Password</h3>
+      <div id="changeMsg" class="msg"></div>
+      <div class="pw-field"><input type="password" id="currentPassword" placeholder="Current password"><button type="button" class="pw-toggle" onclick="togglePwField('currentPassword', this)">👁</button></div>
+      <div class="pw-field"><input type="password" id="changeNewPassword" placeholder="New password"><button type="button" class="pw-toggle" onclick="togglePwField('changeNewPassword', this)">👁</button></div>
+      <div class="pw-field"><input type="password" id="changeConfirmPassword" placeholder="Confirm new password" oninput="checkChangePwMatch()"><button type="button" class="pw-toggle" onclick="togglePwField('changeConfirmPassword', this)">👁</button></div>
+      <div id="changePwMatchStatus" style="font-size:13px;font-weight:600;margin-bottom:8px;"></div>
+      <button class="btn" onclick="changePassword()">Update Password</button>
+      <button class="btn btn-cancel" onclick="closeChangePassword()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Create User Modal -->
+  <div id="createUserModal" class="modal-overlay hidden" onclick="if(event.target===this)closeCreateUser()">
+    <div class="modal">
+      <h3>Create New User</h3>
+      <div id="createUserMsg" class="msg"></div>
+      <input type="text" id="createUserName" placeholder="Full name (e.g. Amara Ojo)">
+      <input type="email" id="createUserEmail" placeholder="Email address">
+      <div id="passwordSection">
+        <p style="color:#475569;font-size:14px;font-weight:600;margin-bottom:8px;">Password:</p>
+        <div style="margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:#334155;cursor:pointer;margin-bottom:6px;">
+            <input type="radio" name="pwType" value="auto" checked onchange="togglePwType()"> Autogenerated password
+          </label>
+          <p style="color:#64748b;font-size:12px;margin-left:24px;margin-bottom:8px;">Password will be shown after user is created.</p>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:#334155;cursor:pointer;">
+            <input type="radio" name="pwType" value="custom" onchange="togglePwType()"> Custom password
+          </label>
+        </div>
+        <div id="customPwSection" style="display:none;">
+          <div style="position:relative;">
+            <input type="password" id="createUserPassword" placeholder="Enter a custom password" style="padding-right:80px;">
+            <button type="button" class="link-btn" style="position:absolute;right:12px;top:14px;font-size:12px;" onclick="toggleShowPw()">Show password</button>
+          </div>
+          <p style="color:#64748b;font-size:11px;margin-bottom:12px;">Must be at least 8 characters. Include uppercase, lowercase, and numbers.</p>
+        </div>
+      </div>
+      <p style="color:#475569;font-size:14px;font-weight:600;margin-bottom:6px;">Folder Access:</p>
+      <div class="folder-tree" id="folderTree"><p style="color:#94a3b8;font-size:13px;">Loading folders...</p></div>
+      <p style="color:#1e40af;font-size:14px;font-weight:600;margin-bottom:12px;">ℹ️ Users with no folders selected will have access to all folders.</p>
+      <div class="checkbox-row" id="adminCheckSection"><input type="checkbox" id="createUserAdmin"><label for="createUserAdmin">Make this user an admin</label></div>
+      <p id="pwHint" style="color:#f59e0b;font-size:14px;font-weight:600;margin-bottom:12px;">🔑 User will be asked to change their password on first login.</p>
+      <button class="btn" onclick="createUser()">Create User</button>
+      <button class="btn btn-cancel" onclick="closeCreateUser()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Change Email Modal -->
+  <div id="changeEmailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeChangeEmail()">
+    <div class="modal">
+      <h3>Change Email</h3>
+      <div id="changeEmailMsg" class="msg"></div>
+      <p style="color:#64748b;font-size:14px;margin-bottom:12px;">Current: <strong id="changeEmailCurrent"></strong></p>
+      <input type="email" id="changeEmailNew" placeholder="New email address">
+      <input type="password" id="changeEmailPassword" placeholder="Temporary password for new email">
+      <p style="color:#64748b;font-size:13px;margin-bottom:12px;">User will need to log in with the new email and set a new password.</p>
+      <button class="btn" onclick="submitChangeEmail()">Change Email</button>
+      <button class="btn btn-cancel" onclick="closeChangeEmail()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Session Warning -->
+  <div id="sessionBanner" class="session-banner">
+    ⚠️ Your session expires in <span id="sessionCountdown">5:00</span>
+    <button onclick="handleLogout()">Sign Out Now</button>
+  </div>
+
+  <!-- File Preview -->
+  <div id="previewOverlay" class="preview-overlay" onclick="if(event.target===this)closePreview()">
+    <div class="preview-container">
+      <button class="close-btn" onclick="closePreview()">✕</button>
+      <button onclick="printPreview()" style="position:absolute;top:12px;right:52px;background:#1e40af;color:#fff;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;z-index:10;" title="Print">🖨</button>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      apiEndpoint: '{{API_ENDPOINT}}',
+      userPoolId: '{{USER_POOL_ID}}',
+      clientId: '{{CLIENT_ID}}',
+      deliveryBucket: '{{DELIVERY_BUCKET}}',
+      region: 'us-east-1'
+    };
+    let currentToken = sessionStorage.getItem('cs_token');
+    let currentPath = '';
+    let allStorageData = {folders:[], files:[]};
+    let allHistoryItems = [];
+    let isAdmin = sessionStorage.getItem('cs_admin') === 'true';
+    let pendingSession = null;
+    let pendingEmail = null;
+    let cachedCredentialReport = null;
+    let cachedCredentialReportTime = null;
+    let sessionTimer = null;
+    let countdownTimer = null;
+
+    // Global API wrapper with 401 handling
+    async function apiFetch(url, options) {
+      const resp = await fetch(url, options);
+      if (resp.status === 401) {
+        alert('Your session has expired. Please sign in again.');
+        handleLogout(true);
+        throw new Error('Session expired');
+      }
+      return resp;
+    }
+
+    function showLoading(containerId) {
+      const el = document.getElementById(containerId);
+      if (el) el.innerHTML = '<div class="loading-overlay"><div class="spinner"></div><p>Loading...</p></div>';
+    }
+
+    // Session timeout warning (warn at 55 min, logout at 60 min)
+    function startSessionTimer() {
+      clearTimeout(sessionTimer);
+      clearInterval(countdownTimer);
+      document.getElementById('sessionBanner').style.display = 'none';
+      // Show warning at 55 minutes
+      sessionTimer = setTimeout(() => {
+        document.getElementById('sessionBanner').style.display = 'block';
+        let seconds = 300;
+        countdownTimer = setInterval(() => {
+          seconds--;
+          const m = Math.floor(seconds / 60);
+          const s = seconds % 60;
+          document.getElementById('sessionCountdown').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+          if (seconds <= 0) {
+            clearInterval(countdownTimer);
+            alert('Your session has expired.');
+            handleLogout(true);
+          }
+        }, 1000);
+      }, 55 * 60 * 1000);
+    }
+
+    // File preview
+    function previewFile(key) {
+      const ext = key.split('.').pop().toLowerCase();
+      const previewable = ['pdf','png','jpg','jpeg','gif','bmp','svg','webp'];
+      if (!previewable.includes(ext)) { alert('Preview not available for this file type. Use Download instead.'); return; }
+      apiFetch(CONFIG.apiEndpoint + '/dashboard/download?key=' + encodeURIComponent(key) + '&mode=preview', { headers: {'Authorization': 'Bearer ' + currentToken} })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.url) return;
+          const content = document.getElementById('previewContent');
+          if (ext === 'pdf') {
+            content.innerHTML = '<iframe src="' + data.url + '#toolbar=1" width="850" height="700" style="border:none;border-radius:0 0 16px 16px;"></iframe>';
+          } else {
+            content.innerHTML = '<img src="' + data.url + '" alt="Preview">';
+          }
+          document.getElementById('previewOverlay').classList.add('active');
+        })
+        .catch(() => alert('Failed to load preview'));
+    }
+
+    function closePreview() {
+      document.getElementById('previewOverlay').classList.remove('active');
+      document.getElementById('previewContent').innerHTML = '';
+    }
+
+    function printPreview() {
+      const iframe = document.querySelector('#previewContent iframe');
+      if (iframe) { iframe.contentWindow.print(); return; }
+      const img = document.querySelector('#previewContent img');
+      if (img) {
+        const win = window.open('');
+        win.document.write('<img src="' + img.src + '" style="max-width:100%;">');
+        win.document.close();
+        setTimeout(() => { win.print(); }, 300);
+      }
+    }
+
+    function getAccessLevel(prefix) {
+      if (isAdmin) return 'admin';
+      const folders = sessionStorage.getItem('cs_folders') || '';
+      if (!folders) return 'full';
+      const entries = folders.split(',').map(f => f.trim()).filter(f => f);
+      if (!entries.length) return 'full';
+      for (const entry of entries) {
+        const parts = entry.split(':');
+        const folder = parts[0];
+        const perm = parts[1] || 'full';
+        if (prefix.startsWith(folder)) return perm;
+      }
+      return 'mixed';
+    }
+
+    function getFolderRowBadge(folderPath) {
+      if (isAdmin) return '';
+      const folders = sessionStorage.getItem('cs_folders') || '';
+      if (!folders) return '';
+      const entries = folders.split(',').map(f => f.trim()).filter(f => f);
+      for (const entry of entries) {
+        const parts = entry.split(':');
+        const folder = parts[0];
+        const perm = parts[1] || 'full';
+        // Only match if this exact folder or folder is inside a permitted parent
+        if (folderPath.startsWith(folder)) {
+          if (perm === 'read') return ' <span class="badge mfa-off" style="font-size:10px;">Read Only</span>';
+          return ' <span class="badge active" style="font-size:10px;">Full Access</span>';
+        }
+        // Exact match on the folder itself
+        if (folder.startsWith(folderPath) && folder !== folderPath) {
+          // Children have permissions but this parent has mixed — no badge
+          return '';
+        }
+      }
+      return '';
+    }
+
+    function getAccessBadge(prefix) {
+      if (!prefix) return '';  // No badge at root level
+      const level = getAccessLevel(prefix);
+      if (level === 'admin') return ' <span class="badge admin" style="font-size:11px;">Admin — Full Access</span>';
+      if (level === 'full') return ' <span class="badge active" style="font-size:11px;">Full Access ✅</span>';
+      if (level === 'read') return ' <span class="badge mfa-off" style="font-size:11px;">Read Only 🔒</span>';
+      return '';
+    }
+
+    // Mobile sidebar toggle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('open');
+    }
+
+    // Drag and drop in Storage Browser
+    document.addEventListener('DOMContentLoaded', function() {
+      const storageTab = document.getElementById('storageTab');
+      storageTab.addEventListener('dragover', function(e) { e.preventDefault(); storageTab.style.background = '#eff6ff'; });
+      storageTab.addEventListener('dragleave', function() { storageTab.style.background = ''; });
+      storageTab.addEventListener('drop', function(e) {
+        e.preventDefault();
+        storageTab.style.background = '';
+        if (e.dataTransfer.files.length && currentPath) {
+          const file = e.dataTransfer.files[0];
+          handleDirectUploadFile(file);
+        } else if (e.dataTransfer.files.length && !currentPath) {
+          showToast('Navigate into a folder first', 'error');
+        }
+      });
+    });
+
+    async function handleDirectUploadFile(file) {
+      showToast('Uploading ' + file.name + '...', 'info');
+      try {
+        if (file.size > 5 * 1024 * 1024) {
+          const presignResp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/upload-presign', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, folder: currentPath, bucket: 'storage'})
+          });
+          const presignData = await presignResp.json();
+          if (!presignResp.ok) { showToast(presignData.error || 'Upload failed', 'error'); return; }
+          const putResp = await fetch(presignData.url, { method: 'PUT', body: file });
+          if (putResp.ok) { showToast('✅ ' + file.name + ' uploaded', 'success'); loadFiles(currentPath); }
+          else { showToast('Upload failed', 'error'); }
+        } else {
+          const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/upload-storage', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, fileContent: await fileToBase64(file), folder: currentPath})
+          });
+          if (resp.ok) { showToast('✅ ' + file.name + ' uploaded', 'success'); loadFiles(currentPath); }
+          else { const data = await resp.json(); showToast(data.error || 'Upload failed', 'error'); }
+        }
+      } catch (e) { showToast('Connection error', 'error'); }
+    }
+
+    // Toast notifications
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'success');
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    // Password strength
+    function updatePwStrength() {
+      const pw = document.getElementById('newPwInput').value;
+      const bar = document.getElementById('pwStrengthBar');
+      const text = document.getElementById('pwStrengthText');
+      let score = 0;
+      if (pw.length >= 8) score++;
+      if (/[a-z]/.test(pw)) score++;
+      if (/[A-Z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      const levels = [{w:'0%',c:'#e2e8f0',t:'Min 8 chars, uppercase, lowercase, number'},{w:'25%',c:'#dc2626',t:'Weak'},{w:'50%',c:'#f59e0b',t:'Fair'},{w:'75%',c:'#3b82f6',t:'Good'},{w:'100%',c:'#16a34a',t:'Strong'}];
+      bar.style.width = levels[score].w;
+      bar.style.background = levels[score].c;
+      text.textContent = levels[score].t;
+      text.style.color = levels[score].c;
+    }
+
+    // Upload destination display
+    function checkPwMatch() {
+      const pw = document.getElementById('newPwInput').value;
+      const confirm = document.getElementById('newPwConfirm').value;
+      const status = document.getElementById('pwMatchStatus');
+      if (!confirm) { status.textContent = ''; return; }
+      if (pw === confirm) { status.textContent = '✅ Passwords match'; status.style.color = '#16a34a'; }
+      else { status.textContent = '❌ Passwords do not match'; status.style.color = '#dc2626'; }
+    }
+
+    function updateUploadDestination() {
+      const folder = document.getElementById('storageFolderSelect').value;
+      document.getElementById('uploadDestination').textContent = '📁 Uploading to: ' + (folder || '/ (root)');
+    }
+
+    // Auto-login if token exists
+    if (currentToken) {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('dashboardPage').classList.remove('hidden');
+      document.getElementById('userEmail').textContent = sessionStorage.getItem('cs_name') ? sessionStorage.getItem('cs_name') + ' | ' + (sessionStorage.getItem('cs_email') || '') : sessionStorage.getItem('cs_email') || '';
+      if (isAdmin) document.getElementById('adminSection').classList.remove('hidden');
+      if (isAdmin) loadNotifications();
+      startSessionTimer();
+      showTab(window.location.hash.replace('#','') || 'home');
+    }
+
+    function showTab(tab) {
+      window.location.hash = tab;
+      document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+      // Close mobile sidebar
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
+      ['homeTab','storageTab','deletedTab','uploadStorageTab','uploadTab','historyTab','usersTab','activityTab','snapshotTab','credentialReportTab'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      const navItems = document.querySelectorAll('.sidebar .nav-item');
+      if (tab === 'home') {
+        document.getElementById('homeTab').classList.remove('hidden');
+        navItems[0].classList.add('active');
+        loadHome();
+      } else if (tab === 'storage') {
+        document.getElementById('storageTab').classList.remove('hidden');
+        navItems[1].classList.add('active');
+        loadFiles('');
+      } else if (tab === 'deleted') {
+        document.getElementById('deletedTab').classList.remove('hidden');
+        navItems[2].classList.add('active');
+        loadDeleted();
+      } else if (tab === 'upload-storage') {
+        document.getElementById('uploadStorageTab').classList.remove('hidden');
+        navItems[3].classList.add('active');
+        loadUploadFolders('');
+      } else if (tab === 'upload') {
+        document.getElementById('uploadTab').classList.remove('hidden');
+        navItems[4].classList.add('active');
+        loadDeliveryFiles();
+      } else if (tab === 'history') {
+        document.getElementById('historyTab').classList.remove('hidden');
+        navItems[5].classList.add('active');
+        loadHistory();
+      } else if (tab === 'users' && isAdmin) {
+        document.getElementById('usersTab').classList.remove('hidden');
+        navItems[6].classList.add('active');
+        loadUsers();
+      } else if (tab === 'activity' && isAdmin) {
+        document.getElementById('activityTab').classList.remove('hidden');
+        navItems[7].classList.add('active');
+        loadActivity();
+      } else if (tab === 'snapshot' && isAdmin) {
+        document.getElementById('snapshotTab').classList.remove('hidden');
+        navItems[8].classList.add('active');
+        loadSnapshot();
+      } else if (tab === 'credential-report' && isAdmin) {
+        document.getElementById('credentialReportTab').classList.remove('hidden');
+        navItems[9].classList.add('active');
+        loadCredentialReportStatus();
+      }
+    }
+
+    window.addEventListener('hashchange', function() {
+      if (currentToken) showTab(window.location.hash.replace('#','') || 'home');
+    });
+
+    async function handleLogin() {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('loginError');
+      if (!email || !password) { errorEl.textContent = 'Please enter email and password'; errorEl.style.display = 'block'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/login', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email, password})
+        });
+        const data = await resp.json();
+        if (data.challenge === 'NEW_PASSWORD_REQUIRED') {
+          pendingSession = data.session;
+          pendingEmail = email;
+          document.getElementById('newPasswordForm').classList.remove('hidden');
+          errorEl.textContent = ''; errorEl.style.display = 'none';
+          return;
+        }
+        if (data.challenge === 'MFA_SETUP') {
+          pendingSession = data.session;
+          pendingEmail = email;
+          showMfaSetup(data.secretCode, email);
+          return;
+        }
+        if (data.challenge === 'SOFTWARE_TOKEN_MFA') {
+          pendingSession = data.session;
+          pendingEmail = email;
+          showMfaVerify();
+          return;
+        }
+        if (resp.ok && data.token) {
+          await completeLogin(data.token, email);
+        } else { errorEl.textContent = data.error || 'Invalid credentials'; errorEl.style.display = 'block'; }
+      } catch (e) { errorEl.textContent = 'Connection error. Please try again.'; errorEl.style.display = 'block'; }
+    }
+
+    async function handleNewPassword() {
+      const email = document.getElementById('loginEmail').value;
+      const newPw = document.getElementById('newPwInput').value;
+      const confirmPw = document.getElementById('newPwConfirm').value;
+      const errorEl = document.getElementById('loginError');
+      if (!newPw) { errorEl.textContent = 'Please enter a new password'; errorEl.style.display = 'block'; return; }
+      if (newPw !== confirmPw) { errorEl.textContent = 'Passwords do not match'; errorEl.style.display = 'block'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/new-password', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email, newPassword: newPw, session: pendingSession})
+        });
+        const data = await resp.json();
+        if (resp.ok && data.token) {
+          pendingSession = null;
+          document.getElementById('newPasswordForm').classList.add('hidden');
+          await completeLogin(data.token, email);
+        } else if (data.challenge === 'MFA_SETUP') {
+          pendingSession = data.session;
+          pendingEmail = email;
+          document.getElementById('newPasswordForm').classList.add('hidden');
+          showMfaSetup(data.secretCode, email);
+        } else { errorEl.textContent = data.error || 'Failed to set password'; errorEl.style.display = 'block'; }
+      } catch (e) { errorEl.textContent = 'Connection error. Please try again.'; errorEl.style.display = 'block'; }
+    }
+
+    function showMfaSetup(secretCode, email) {
+      document.getElementById('loginError').style.display = 'none';
+      document.getElementById('mfaSetupForm').classList.remove('hidden');
+      document.getElementById('mfaVerifyForm').classList.add('hidden');
+      document.getElementById('mfaSecretKey').textContent = secretCode;
+      document.getElementById('mfaSetupCode').value = '';
+      // Generate QR code using canvas
+      const otpUrl = 'otpauth://totp/CloudSentrics:' + encodeURIComponent(email) + '?secret=' + secretCode + '&issuer=CloudSentrics';
+      generateQR(otpUrl, document.getElementById('qrCanvas'));
+    }
+
+    function showMfaVerify() {
+      document.getElementById('loginError').style.display = 'none';
+      document.getElementById('mfaSetupForm').classList.add('hidden');
+      document.getElementById('mfaVerifyForm').classList.remove('hidden');
+      document.getElementById('mfaVerifyCode').value = '';
+      document.getElementById('mfaVerifyCode').focus();
+    }
+
+    async function verifyMfaSetup() {
+      const code = document.getElementById('mfaSetupCode').value.trim();
+      const errorEl = document.getElementById('mfaSetupError');
+      if (code.length !== 6) { errorEl.textContent = 'Enter a 6-digit code'; errorEl.style.display = 'block'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/verify-mfa-setup', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: pendingEmail, session: pendingSession, code: code})
+        });
+        const data = await resp.json();
+        if (resp.ok && data.token) {
+          document.getElementById('mfaSetupForm').classList.add('hidden');
+          await completeLogin(data.token, pendingEmail);
+        } else { errorEl.textContent = data.error || 'Invalid code'; errorEl.style.display = 'block'; }
+      } catch (e) { errorEl.textContent = 'Connection error'; errorEl.style.display = 'block'; }
+    }
+
+    async function verifyMfa() {
+      const code = document.getElementById('mfaVerifyCode').value.trim();
+      const errorEl = document.getElementById('mfaVerifyError');
+      if (code.length !== 6) { errorEl.textContent = 'Enter a 6-digit code'; errorEl.style.display = 'block'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/verify-mfa', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email: pendingEmail, session: pendingSession, code: code})
+        });
+        const data = await resp.json();
+        if (resp.ok && data.token) {
+          document.getElementById('mfaVerifyForm').classList.add('hidden');
+          await completeLogin(data.token, pendingEmail);
+        } else { errorEl.textContent = data.error || 'Invalid code'; errorEl.style.display = 'block'; }
+      } catch (e) { errorEl.textContent = 'Connection error'; errorEl.style.display = 'block'; }
+    }
+
+    // Simple QR code generator (canvas-based)
+    function generateQR(text, canvas) {
+      // Use a lightweight QR encoding
+      const size = 200;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, size, size);
+      // Create QR via external API (simple approach)
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() { ctx.drawImage(img, 0, 0, size, size); };
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(text);
+    }
+
+    async function completeLogin(token, email) {
+      currentToken = token;
+      sessionStorage.setItem('cs_token', token);
+      sessionStorage.setItem('cs_email', email);
+      document.getElementById('userEmail').textContent = email;
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('dashboardPage').classList.remove('hidden');
+      document.getElementById('loginError').style.display = 'none';
+      startSessionTimer();
+      // Check admin status and get permissions
+      try {
+        const meResp = await fetch(CONFIG.apiEndpoint + '/dashboard/me', { headers: {'Authorization': 'Bearer ' + token} });
+        if (meResp.ok) {
+          const meData = await meResp.json();
+          sessionStorage.setItem('cs_folders', meData.allowedFolders || '');
+          sessionStorage.setItem('cs_name', meData.name || '');
+          const displayName = meData.name ? meData.name + ' | ' + email : email;
+          document.getElementById('userEmail').textContent = displayName;
+          if (meData.isAdmin) {
+            isAdmin = true;
+            sessionStorage.setItem('cs_admin', 'true');
+            document.getElementById('adminSection').classList.remove('hidden');
+          } else {
+            isAdmin = false;
+            sessionStorage.setItem('cs_admin', 'false');
+          }
+        }
+      } catch (e) { isAdmin = false; }
+      if (isAdmin) loadNotifications();
+      showTab('home');
+    }
+
+    function handleLogout(force) {
+      if (!force && !confirm('Are you sure you want to sign out?')) return;
+      currentToken = null;
+      isAdmin = false;
+      clearTimeout(sessionTimer);
+      clearInterval(countdownTimer);
+      document.getElementById('sessionBanner').style.display = 'none';
+      sessionStorage.removeItem('cs_token');
+      sessionStorage.removeItem('cs_email');
+      sessionStorage.removeItem('cs_admin');
+      window.location.hash = '';
+      document.getElementById('dashboardPage').classList.add('hidden');
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('adminSection').classList.add('hidden');
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('newPasswordForm').classList.add('hidden');
+    }
+
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('dragover'); if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]); });
+    function handleFileSelect(event) {
+      if (!event.target.files.length) return;
+      const file = event.target.files[0];
+      const size = file.size > 1048576 ? (file.size/1048576).toFixed(1) + ' MB' : file.size > 1024 ? (file.size/1024).toFixed(1) + ' KB' : file.size + ' B';
+      const statusEl = document.getElementById('uploadStatus');
+      statusEl.className = 'upload-status loading';
+      statusEl.innerHTML = '📄 <strong>' + file.name + '</strong> — ' + size + ' &nbsp; <button class="btn-action success" onclick="confirmSpreadsheetUpload()">Upload Now</button> <button class="btn-action" style="background:#e2e8f0;color:#475569;" onclick="cancelSpreadsheetUpload()">Cancel</button>';
+      window._pendingSpreadsheetFile = file;
+    }
+    function confirmSpreadsheetUpload() { if (window._pendingSpreadsheetFile) uploadFile(window._pendingSpreadsheetFile); window._pendingSpreadsheetFile = null; }
+    function cancelSpreadsheetUpload() { document.getElementById('uploadStatus').className = 'upload-status'; document.getElementById('uploadStatus').innerHTML = ''; window._pendingSpreadsheetFile = null; document.getElementById('fileInput').value = ''; }
+
+    async function uploadFile(file) {
+      const statusEl = document.getElementById('uploadStatus');
+      statusEl.className = 'upload-status loading';
+      statusEl.textContent = 'Uploading ' + file.name + '...';
+      try {
+        if (file.size > 5 * 1024 * 1024) {
+          const presignResp = await fetch(CONFIG.apiEndpoint + '/dashboard/upload-presign', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, bucket: 'delivery'})
+          });
+          const presignData = await presignResp.json();
+          if (!presignResp.ok) { statusEl.className = 'upload-status error'; statusEl.textContent = '\u274c ' + (presignData.error || 'Failed'); return; }
+          const putResp = await fetch(presignData.url, { method: 'PUT', body: file });
+          if (putResp.ok) { statusEl.className = 'upload-status success'; statusEl.textContent = '\u2705 ' + file.name + ' uploaded successfully. Delivery processing started.'; }
+          else { statusEl.className = 'upload-status error'; statusEl.textContent = '\u274c Upload failed'; }
+        } else {
+          const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/upload', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, fileContent: await fileToBase64(file)})
+          });
+          const data = await resp.json();
+          if (resp.ok) { statusEl.className = 'upload-status success'; statusEl.textContent = '\u2705 ' + file.name + ' uploaded successfully. Delivery processing started.'; }
+          else { statusEl.className = 'upload-status error'; statusEl.textContent = '\u274c Upload failed: ' + (data.error || 'Unknown error'); }
+        }
+      } catch (e) { statusEl.className = 'upload-status error'; statusEl.textContent = '\u274c Connection error. Please try again.'; }
+    }
+
+    // Storage upload
+    const storageUploadArea = document.getElementById('storageUploadArea');
+    storageUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); storageUploadArea.classList.add('dragover'); });
+    storageUploadArea.addEventListener('dragleave', () => storageUploadArea.classList.remove('dragover'));
+    storageUploadArea.addEventListener('drop', (e) => { e.preventDefault(); storageUploadArea.classList.remove('dragover'); if (e.dataTransfer.files.length) uploadToStorage(e.dataTransfer.files[0]); });
+    function handleStorageFileSelect(event) {
+      if (!event.target.files.length) return;
+      const file = event.target.files[0];
+      const size = file.size > 1048576 ? (file.size/1048576).toFixed(1) + ' MB' : file.size > 1024 ? (file.size/1024).toFixed(1) + ' KB' : file.size + ' B';
+      const statusEl = document.getElementById('storageUploadStatus');
+      statusEl.className = 'upload-status loading';
+      statusEl.innerHTML = '📄 <strong>' + file.name + '</strong> — ' + size + ' &nbsp; <button class="btn-action success" onclick="confirmStorageUpload()">Upload Now</button> <button class="btn-action" style="background:#e2e8f0;color:#475569;" onclick="cancelStorageUpload()">Cancel</button>';
+      window._pendingStorageFile = file;
+    }
+    function confirmStorageUpload() { if (window._pendingStorageFile) uploadToStorage(window._pendingStorageFile); window._pendingStorageFile = null; }
+    function cancelStorageUpload() { document.getElementById('storageUploadStatus').className = 'upload-status'; document.getElementById('storageUploadStatus').innerHTML = ''; window._pendingStorageFile = null; document.getElementById('storageFileInput').value = ''; }
+
+    async function uploadToStorage(file) {
+      const statusEl = document.getElementById('storageUploadStatus');
+      const folder = document.getElementById('storageFolderSelect').value;
+      statusEl.className = 'upload-status loading';
+      statusEl.textContent = 'Uploading ' + file.name + ' to ' + (folder || '/') + '...';
+      try {
+        if (file.size > 5 * 1024 * 1024) {
+          // Large file: use presigned URL
+          const presignResp = await fetch(CONFIG.apiEndpoint + '/dashboard/upload-presign', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, folder: folder, bucket: 'storage'})
+          });
+          const presignData = await presignResp.json();
+          if (!presignResp.ok) { statusEl.className = 'upload-status error'; statusEl.textContent = '❌ ' + (presignData.error || 'Failed'); return; }
+          const putResp = await fetch(presignData.url, { method: 'PUT', body: file });
+          if (putResp.ok) { statusEl.className = 'upload-status success'; statusEl.textContent = '✅ ' + file.name + ' uploaded successfully to ' + (folder || '/') + '.'; }
+          else { statusEl.className = 'upload-status error'; statusEl.textContent = '❌ Upload failed'; }
+        } else {
+          const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/upload-storage', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, fileContent: await fileToBase64(file), folder: folder})
+          });
+          const data = await resp.json();
+          if (resp.ok) { statusEl.className = 'upload-status success'; statusEl.textContent = '✅ ' + file.name + ' uploaded successfully to ' + (folder || '/') + '.'; uploadFoldersLoaded = false; }
+          else { statusEl.className = 'upload-status error'; statusEl.textContent = '❌ Upload failed: ' + (data.error || 'Unknown error'); }
+        }
+      } catch (e) { statusEl.className = 'upload-status error'; statusEl.textContent = '❌ Connection error. Please try again.'; }
+    }
+
+    let uploadFoldersLoaded = false;
+    async function loadUploadFolders(prefix, depth) {
+      const select = document.getElementById('storageFolderSelect');
+      if (!prefix) {
+        if (uploadFoldersLoaded) return;
+        select.innerHTML = '<option value="">/ (root)</option>';
+        depth = 0;
+        uploadFoldersLoaded = true;
+      }
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/files?prefix=' + encodeURIComponent(prefix), { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        for (const folder of (data.folders || [])) {
+          const fullPath = prefix + folder;
+          const displayName = folder.replace(/\/$/, '');
+          const indent = '\u00A0\u00A0'.repeat(depth + 1);
+          select.innerHTML += '<option value="' + fullPath + '">' + indent + '📁 ' + displayName + '</option>';
+          await loadUploadFolders(fullPath, depth + 1);
+        }
+      } catch (e) { /* keep what we have */ }
+    }
+
+    function showCreateFolder() {
+      const row = document.getElementById('createFolderRow');
+      row.classList.remove('hidden');
+      row.style.display = 'flex';
+      document.getElementById('newFolderName').value = '';
+      document.getElementById('newFolderName').focus();
+    }
+
+    function hideCreateFolder() {
+      const row = document.getElementById('createFolderRow');
+      row.classList.add('hidden');
+      row.style.display = 'none';
+    }
+
+    async function createFolder() {
+      const name = document.getElementById('newFolderName').value.trim().replace(/^\/+|\/+$/g, '');
+      if (!name) return;
+      const folderKey = name + '/';
+      const statusEl = document.getElementById('storageUploadStatus');
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/create-folder', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({folder: folderKey})
+        });
+        if (resp.ok) {
+          statusEl.className = 'upload-status success';
+          statusEl.textContent = '✅ Folder "' + folderKey + '" created.';
+          hideCreateFolder();
+          uploadFoldersLoaded = false;
+          loadUploadFolders('');
+        } else {
+          const data = await resp.json();
+          statusEl.className = 'upload-status error';
+          statusEl.textContent = '❌ ' + (data.error || 'Failed to create folder');
+        }
+      } catch (e) { statusEl.className = 'upload-status error'; statusEl.textContent = '❌ Connection error.'; }
+    }
+
+    // Deleted files
+    let deletedNextToken = '';
+
+    async function loadDeliveryFiles() {
+      const section = document.getElementById('recentUploadsSection');
+      if (sessionStorage.getItem('cs_admin') !== 'true') { section.classList.add('hidden'); return; }
+      section.classList.remove('hidden');
+      const container = document.getElementById('deliveryFolderContent');
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/delivery-files', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const files = data.files || [];
+        if (files.length === 0) { container.innerHTML = '<p style="color:#94a3b8;font-size:14px;">No spreadsheets uploaded yet.</p>'; return; }
+        let html = '<div class="table-container"><table><thead><tr><th>File</th><th>Size</th><th>Uploaded</th></tr></thead><tbody>';
+        files.forEach(f => {
+          const size = f.size > 1024 ? (f.size/1024).toFixed(1) + ' KB' : f.size + ' B';
+          const dt = new Date(f.lastModified).toLocaleString();
+          html += '<tr><td>📄 ' + f.name + '</td><td>' + size + '</td><td>' + dt + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch (e) { container.innerHTML = '<p style="color:#dc2626;font-size:14px;">Failed to load files.</p>'; }
+    }
+
+    // Deleted files continued
+    let deletedNextKey = '';
+    async function loadDeleted(append) {
+      const container = document.getElementById('deletedContent');
+      if (!append) { deletedNextToken = ''; deletedNextKey = ''; }
+      let url = CONFIG.apiEndpoint + '/dashboard/deleted';
+      if (deletedNextToken) url += '?pageToken=' + encodeURIComponent(deletedNextToken) + '&keyMarker=' + encodeURIComponent(deletedNextKey);
+      try {
+        if (!append) showLoading('deletedContent');
+        const resp = await apiFetch(url, { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const files = data.files || [];
+        if (!append && files.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">✅</div><p>No deleted files</p></div>'; return; }
+        let html = append ? container.querySelector('.table-container') ? '' : '' : '';
+        if (!append) html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Path</th><th>Deleted By</th><th>Deleted At</th><th>Actions</th></tr></thead><tbody>';
+        files.forEach(f => {
+          const dt = new Date(f.deletedAt).toLocaleString();
+          html += '<tr><td>🗑️ ' + f.name + '</td><td>' + f.key + '</td><td>' + (f.deletedBy || 'Unknown') + '</td><td>' + dt + '</td><td><button class="btn-restore" onclick="restoreFile(\'' + f.key + '\',\'' + f.versionId + '\')">Restore</button></td></tr>';
+        });
+        if (!append) html += '</tbody></table></div>';
+        if (append) {
+          container.querySelector('tbody').insertAdjacentHTML('beforeend', html);
+          const loadMoreBtn = container.querySelector('.btn-create');
+          if (loadMoreBtn) loadMoreBtn.remove();
+        } else {
+          container.innerHTML = html;
+        }
+        if (data.nextPageToken) {
+          deletedNextToken = data.nextPageToken;
+          deletedNextKey = data.nextKeyMarker || '';
+          container.insertAdjacentHTML('beforeend', '<button class="btn-create" onclick="loadDeleted(true)" style="margin-top:12px;">Load More</button>');
+        }
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load deleted files</p></div>'; }
+    }
+
+    async function restoreFile(key, versionId) {
+      if (!confirm('Restore "' + key + '"?')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/restore', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({key: key, versionId: versionId})
+        });
+        if (resp.ok) loadDeleted();
+        else { const data = await resp.json(); alert('Restore failed: ' + (data.error || 'Unknown error')); }
+      } catch (e) { alert('Restore failed'); }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function loadHistory() {
+      const container = document.getElementById('historyContent');
+      const countEl = document.getElementById('historyCount');
+      try {
+        showLoading('historyContent');
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/history', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        allHistoryItems = data.items || [];
+        countEl.textContent = 'Deliveries (' + allHistoryItems.length + ')';
+        renderHistory(allHistoryItems);
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">\u26a0\ufe0f</div><p>Failed to load history</p></div>'; }
+    }
+
+    function renderHistory(items) {
+      const container = document.getElementById('historyContent');
+      if (!items || items.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">\ud83d\udced</div><p>No deliveries found</p></div>'; return; }
+      let html = '<div class="table-container"><table><thead><tr><th>Recipient</th><th>File</th><th>ID</th><th>Delivered At</th></tr></thead><tbody>';
+      items.forEach(item => {
+        const fn = item.fileKey || '-';
+        const dt = item.deliveredAt ? new Date(item.deliveredAt).toLocaleString() : '-';
+        html += '<tr><td>' + (item.recipientEmail||'-') + '</td><td>' + fn + '</td><td>' + (item.identifier||'-') + '</td><td>' + dt + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+    function filterHistory() {
+      const q = document.getElementById('historySearch').value.toLowerCase();
+      if (!q) { renderHistory(allHistoryItems); return; }
+      const filtered = allHistoryItems.filter(item =>
+        (item.recipientEmail || '').toLowerCase().includes(q) ||
+        (item.fileKey || '').toLowerCase().includes(q) ||
+        (item.identifier || '').toLowerCase().includes(q)
+      );
+      renderHistory(filtered);
+    }
+
+    function exportHistory(format) {
+      const data = allHistoryItems;
+      if (!data.length) { alert('No deliveries to export'); return; }
+      if (format === 'json') {
+        downloadBlob(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}), 'delivery-history.json');
+      } else if (format === 'csv') {
+        let csv = 'Recipient,File,ID,Delivered At\n';
+        data.forEach(d => {
+          const fn = d.fileKey || '-';
+          const dt = d.deliveredAt ? new Date(d.deliveredAt).toLocaleString() : '';
+          csv += '"' + (d.recipientEmail||'') + '","' + fn + '","' + (d.identifier||'') + '","' + dt + '"\n';
+        });
+        downloadBlob(new Blob([csv], {type: 'text/csv'}), 'delivery-history.csv');
+      } else if (format === 'pdf') {
+        const win = window.open('', '_blank');
+        let html = '<html><head><title>Delivery History</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;font-size:12px;}th{background:#1e40af;color:#fff;}</style></head><body>';
+        html += '<h2>Delivery History</h2><p>Exported: ' + new Date().toLocaleString() + ' | Total: ' + data.length + ' deliveries</p>';
+        html += '<table><tr><th>Recipient</th><th>File</th><th>ID</th><th>Delivered At</th></tr>';
+        data.forEach(d => {
+          const fn = d.fileKey || '-';
+          const dt = d.deliveredAt ? new Date(d.deliveredAt).toLocaleString() : '-';
+          html += '<tr><td>' + (d.recipientEmail||'-') + '</td><td>' + fn + '</td><td>' + (d.identifier||'-') + '</td><td>' + dt + '</td></tr>';
+        });
+        html += '</table></body></html>';
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => { win.print(); }, 500);
+      }
+    }
+
+    async function loadFiles(prefix) {
+      currentPath = prefix;
+      const container = document.getElementById('storageContent');
+      const breadcrumb = document.getElementById('breadcrumb');
+      const parts = prefix.split('/').filter(p => p);
+      let bc = '';
+      if (parts.length > 0) {
+        bc = '<span onclick="loadFiles(\'\')" style="font-weight:600;">\u2190 Back</span> &nbsp; ';
+        let path = '';
+        parts.forEach((part, i) => {
+          path += part + '/';
+          if (i < parts.length - 1) bc += '<span onclick="loadFiles(\'' + path + '\')">' + part + '</span> / ';
+          else bc += '<strong>' + part + '</strong>';
+        });
+        bc += ' &nbsp; <button class="btn-delete" onclick="deleteFolderCurrent(\'' + prefix + '\')" style="font-size:12px;padding:4px 10px;">Delete Folder</button>';
+      }
+      breadcrumb.innerHTML = bc + getAccessBadge(prefix);
+      const accessLevel = getAccessLevel(prefix);
+      const isReadOnly = accessLevel === 'read';
+      document.getElementById('uploadHereBtn').style.display = (prefix && !isReadOnly) ? 'inline-block' : 'none';
+      try {
+        showLoading('storageContent');
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/files?prefix=' + encodeURIComponent(prefix), { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const totalFolders = (data.folders || []).length;
+        const totalFiles = (data.files || []).length;
+        if (totalFolders === 0 && totalFiles === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>No files found</p><p style="margin-top:8px;color:#64748b;font-size:14px;">Get started by creating a folder or uploading a file</p><div style="margin-top:16px;"><button class="empty-action-btn" onclick="showStorageCreateFolder()">+ Create Folder</button><button class="empty-action-btn" onclick="showTab(\'upload-storage\')">📤 Upload File</button></div></div>'; return; }
+        allStorageData = {folders: data.folders || [], files: data.files || []};
+        document.getElementById('storageSearch').value = '';
+        document.getElementById('storageSearch').style.display = prefix ? 'block' : 'none';
+        renderStorage(allStorageData.folders, allStorageData.files);
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">\u26a0\ufe0f</div><p>Failed to load files</p></div>'; }
+    }
+
+    function filterStorage() {
+      const q = document.getElementById('storageSearch').value.toLowerCase();
+      if (!q) { renderStorage(allStorageData.folders, allStorageData.files); return; }
+      const folders = allStorageData.folders.filter(f => f.toLowerCase().includes(q));
+      const files = allStorageData.files.filter(f => f.name.toLowerCase().includes(q) || f.key.toLowerCase().includes(q));
+      renderStorage(folders, files);
+    }
+
+    function renderStorage(folders, files) {
+      const container = document.getElementById('storageContent');
+      if (folders.length === 0 && files.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">\ud83d\udced</div><p>No results found</p></div>'; return; }
+      let html = '<div class="table-container"><table><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead><tbody>';
+        folders.forEach(folder => {
+          html += '<tr class="folder-row"><td onclick="loadFiles(\'' + currentPath + folder + '\')">\ud83d\udcc1 <strong style="color:#1e40af;">' + folder + '</strong>' + getFolderRowBadge(currentPath + folder) + '</td><td>Folder</td><td>-</td><td>-</td><td><button class="btn-delete" onclick="event.stopPropagation();deleteFolder(\'' + currentPath + folder + '\')">Delete</button></td></tr>';
+        });
+        files.forEach(file => {
+          const size = file.size > 1024 ? (file.size/1024).toFixed(1) + ' KB' : file.size + ' B';
+          const dt = new Date(file.lastModified).toLocaleString();
+          const ext = file.name.split('.').pop().toLowerCase();
+          const canPreview = ['pdf','png','jpg','jpeg','gif','bmp','svg','webp'].includes(ext);
+          const previewBtn = canPreview ? '<button class="btn-preview" onclick="event.stopPropagation();previewFile(\'' + file.key + '\')">Preview</button>' : '';
+          html += '<tr><td>\ud83d\udcc4 ' + file.name + '</td><td>File</td><td>' + size + '</td><td>' + dt + '</td><td>' + previewBtn + '<button class="btn-download" onclick="event.stopPropagation();downloadFile(\'' + file.key + '\')">Download</button><button class="btn-delete" onclick="event.stopPropagation();deleteFile(\'' + file.key + '\',\'' + file.name + '\')">Delete</button></td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    async function downloadFile(key) {
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/download?key=' + encodeURIComponent(key), { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        if (data.url) window.open(data.url, '_blank');
+        else alert('Failed to generate download link');
+      } catch (e) { alert('Download failed'); }
+    }
+
+    async function handleDirectUpload(event) {
+      if (!event.target.files.length) return;
+      const file = event.target.files[0];
+      event.target.value = '';
+      showToast('Uploading ' + file.name + '...', 'info');
+      try {
+        if (file.size > 5 * 1024 * 1024) {
+          const presignResp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/upload-presign', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, folder: currentPath, bucket: 'storage'})
+          });
+          const presignData = await presignResp.json();
+          if (!presignResp.ok) { showToast(presignData.error || 'Upload failed', 'error'); return; }
+          const putResp = await fetch(presignData.url, { method: 'PUT', body: file });
+          if (putResp.ok) { showToast('✅ ' + file.name + ' uploaded', 'success'); loadFiles(currentPath); }
+          else { showToast('Upload failed', 'error'); }
+        } else {
+          const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/upload-storage', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({fileName: file.name, fileContent: await fileToBase64(file), folder: currentPath})
+          });
+          if (resp.ok) { showToast('✅ ' + file.name + ' uploaded', 'success'); loadFiles(currentPath); }
+          else { const data = await resp.json(); showToast(data.error || 'Upload failed', 'error'); }
+        }
+      } catch (e) { showToast('Connection error', 'error'); }
+    }
+
+    async function deleteFile(key, name) {
+      if (!confirm('Are you sure you want to delete "' + name + '"?\n\nThis file can be restored from the Deleted Files section if needed.')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/delete', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({key: key})
+        });
+        const data = await resp.json();
+        if (resp.ok) { showToast('File deleted', 'success'); loadFiles(currentPath); }
+        else alert('Delete failed: ' + (data.error || 'Unknown error'));
+      } catch (e) { alert('Delete failed'); }
+    }
+
+    async function deleteFolder(prefix) {
+      if (!confirm('Delete folder "' + prefix + '" and ALL files inside it?\n\nFiles can be restored from the Deleted Files section.')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/delete-folder', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({prefix: prefix})
+        });
+        if (resp.ok) { loadFiles(currentPath); }
+        else { const data = await resp.json(); alert('Delete failed: ' + (data.error || 'Unknown error')); }
+      } catch (e) { alert('Delete failed'); }
+    }
+
+    function showStorageCreateFolder() {
+      const row = document.getElementById('storageCreateFolderRow');
+      row.classList.remove('hidden');
+      row.style.display = 'flex';
+      document.getElementById('storageNewFolderName').value = '';
+      // Load parent folders into dropdown
+      const select = document.getElementById('storageParentFolder');
+      select.innerHTML = '<option value="">/ (root)</option>';
+      loadParentFolders('', 0, select);
+      // Pre-select current path
+      setTimeout(() => { select.value = currentPath; }, 500);
+      document.getElementById('storageNewFolderName').focus();
+    }
+
+    async function loadParentFolders(prefix, depth, select) {
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/files?prefix=' + encodeURIComponent(prefix), { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        for (const folder of (data.folders || [])) {
+          const fullPath = prefix + folder;
+          const displayName = folder.replace(/\/$/, '');
+          const indent = '\u00A0\u00A0'.repeat(depth + 1);
+          select.innerHTML += '<option value="' + fullPath + '">' + indent + '📁 ' + displayName + '</option>';
+          await loadParentFolders(fullPath, depth + 1, select);
+        }
+      } catch (e) { /* keep what we have */ }
+    }
+
+    function hideStorageCreateFolder() {
+      const row = document.getElementById('storageCreateFolderRow');
+      row.classList.add('hidden');
+      row.style.display = 'none';
+    }
+
+    async function createStorageFolder() {
+      const parent = document.getElementById('storageParentFolder').value;
+      const name = document.getElementById('storageNewFolderName').value.trim().replace(/^\/+|\/+$/g, '');
+      if (!name) return;
+      const folderKey = parent + name + '/';
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/create-folder', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({folder: folderKey})
+        });
+        if (resp.ok) {
+          hideStorageCreateFolder();
+          loadFiles(currentPath);
+        } else {
+          const data = await resp.json();
+          alert(data.error || 'Failed to create folder');
+        }
+      } catch (e) { alert('Connection error'); }
+    }
+
+    async function deleteFolderCurrent(prefix) {
+      if (!confirm('Delete folder "' + prefix + '" and ALL files inside it?\n\nFiles can be restored from the Deleted Files section.')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/delete-folder', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({prefix: prefix})
+        });
+        if (resp.ok) {
+          // Navigate to parent folder
+          const parts = prefix.replace(/\/$/, '').split('/');
+          parts.pop();
+          loadFiles(parts.length > 0 ? parts.join('/') + '/' : '');
+        } else { const data = await resp.json(); alert('Delete failed: ' + (data.error || 'Unknown error')); }
+      } catch (e) { alert('Delete failed'); }
+    }
+
+    // ========= Admin Functions =========
+    async function loadUsers() {
+      const container = document.getElementById('usersContent');
+      const countEl = document.getElementById('usersCount');
+      try {
+        showLoading('usersContent');
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/users', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const users = data.users || [];
+        countEl.textContent = 'Users (' + users.length + ')';
+        document.querySelector('#usersTab h3').textContent = 'User Management';
+        if (users.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">👥</div><p>No users found</p></div>'; return; }
+        let html = '<div class="table-container"><table><thead><tr><th><input type="checkbox" onchange="toggleSelectAllUsers(this)"></th><th>Name</th><th>Email</th><th>Role</th><th>MFA</th><th>Folder Access</th><th>Status</th><th>Last Login</th><th>Created</th></tr></thead><tbody>';
+        users.forEach(u => {
+          const dt = u.created ? new Date(u.created).toLocaleDateString() : '-';
+          const ll = u.lastLogin ? getTimeAgo(u.lastLogin) : 'Never';
+          const mfaBadge = u.mfaEnabled ? '<span class="badge mfa-on">✓ Enabled</span>' : '<span class="badge mfa-off">Not Set Up</span>';
+          const roleBadge = u.role === 'Admin' ? '<span class="badge admin">Admin</span>' : '<span class="badge user">User</span>';
+          const statusBadge = u.enabled ? '<span class="badge active">Active</span>' : '<span class="badge disabled">Disabled</span>';
+          let accessHtml = '';
+          if (u.role === 'Admin' || !u.allowedFolders) {
+            accessHtml = '<span class="access-tag access-full">Full Access</span>';
+          } else {
+            u.allowedFolders.split(',').forEach(f => {
+              f = f.trim();
+              if (!f) return;
+              const parts = f.split(':');
+              const folder = parts[0];
+              const perm = parts[1] || 'full';
+              const permLabel = perm === 'read' ? 'Read Only' : 'Full';
+              const permClass = perm === 'read' ? '' : 'access-full';
+              accessHtml += '<span class="access-tag ' + permClass + '">' + folder + ' (' + permLabel + ')</span>';
+            });
+          }
+          let actions = '';
+          if (u.mfaEnabled) actions += '<span class="badge mfa-on" style="font-size:10px;">MFA ✓</span> ';
+          html += '<tr><td><input type="checkbox" class="user-select-cb" value="' + u.username + '" data-email="' + u.email + '" onchange="updateDeleteBtn()"></td><td>' + (u.name || '-') + '</td><td>' + u.email + '</td><td>' + roleBadge + '</td><td>' + mfaBadge + '</td><td>' + accessHtml + '</td><td>' + statusBadge + '</td><td>' + ll + '</td><td>' + dt + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load users</p></div>'; }
+    }
+
+    function togglePwType() {
+      const isCustom = document.querySelector('input[name="pwType"][value="custom"]').checked;
+      document.getElementById('customPwSection').style.display = isCustom ? 'block' : 'none';
+      if (!isCustom) document.getElementById('createUserPassword').value = '';
+    }
+
+    function generatePassword() {
+      const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+      const lower = 'abcdefghjkmnpqrstuvwxyz';
+      const nums = '23456789';
+      const symbols = '!@#$%&*';
+      let pw = '';
+      pw += upper[Math.floor(Math.random() * upper.length)];
+      pw += lower[Math.floor(Math.random() * lower.length)];
+      pw += nums[Math.floor(Math.random() * nums.length)];
+      pw += symbols[Math.floor(Math.random() * symbols.length)];
+      const all = upper + lower + nums + symbols;
+      for (let i = 0; i < 8; i++) pw += all[Math.floor(Math.random() * all.length)];
+      return pw.split('').sort(() => Math.random() - 0.5).join('');
+    }
+
+    function toggleShowPw() {
+      const input = document.getElementById('createUserPassword');
+      const btn = input.parentElement.querySelector('.link-btn');
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide password'; }
+      else { input.type = 'password'; btn.textContent = 'Show password'; }
+    }
+
+    function showCreateUser() {
+      document.getElementById('createUserModal').classList.remove('hidden');
+      document.getElementById('createUserMsg').textContent = '';
+      document.querySelector('input[name="pwType"][value="auto"]').checked = true;
+      togglePwType();
+      loadFolderTree('', 0, document.getElementById('folderTree'));
+    }
+    function closeCreateUser() { resetCreateModal(); }
+
+    async function loadFolderTree(prefix, depth, container) {
+      if (depth === 0) container.innerHTML = '';
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/files?prefix=' + encodeURIComponent(prefix), { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const folders = data.folders || [];
+        if (depth === 0 && folders.length === 0) { container.innerHTML = '<p style="color:#94a3b8;font-size:13px;">No folders found</p>'; return; }
+        folders.forEach(folder => {
+          const fullPath = prefix + folder;
+          const row = document.createElement('div');
+          row.className = 'folder-tree-item depth-' + depth;
+          row.innerHTML = '<span class="folder-toggle" onclick="toggleTreeFolder(this,\'' + fullPath + '\',' + (depth+1) + ')">▶</span>' +
+            '<span class="folder-tree-label">📁 ' + folder.replace(/\/$/, '') + '</span>' +
+            '<select class="folder-access-select" data-folder="' + fullPath + '" style="margin-left:auto;padding:4px 8px;border-radius:4px;border:1px solid #cbd5e1;font-size:12px;font-weight:600;">' +
+            '<option value="" style="color:#94a3b8;">— Select —</option>' +
+            '<option value="full" style="color:#16a34a;">Full Access</option>' +
+            '<option value="read" style="color:#f59e0b;">Read Only</option>' +
+            '</select>';
+          container.appendChild(row);
+        });
+      } catch (e) { container.innerHTML = '<p style="color:#dc2626;font-size:13px;">Failed to load folders</p>'; }
+    }
+
+    async function toggleTreeFolder(toggle, prefix, depth) {
+      const row = toggle.closest('.folder-tree-item');
+      const existing = row.nextElementSibling;
+      if (toggle.textContent === '▼') {
+        toggle.textContent = '▶';
+        while (row.nextElementSibling && row.nextElementSibling.classList.contains('folder-tree-item') && parseInt(row.nextElementSibling.className.match(/depth-(\d+)/)[1]) >= depth) {
+          row.nextElementSibling.remove();
+        }
+        return;
+      }
+      toggle.textContent = '▼';
+      const tempContainer = document.createElement('div');
+      await loadFolderTree(prefix, depth, tempContainer);
+      const children = Array.from(tempContainer.children);
+      let insertAfter = row;
+      children.forEach(child => {
+        insertAfter.after(child);
+        insertAfter = child;
+      });
+    }
+
+    function getSelectedFolders() {
+      const selects = document.querySelectorAll('#folderTree .folder-access-select');
+      const result = [];
+      selects.forEach(s => {
+        if (s.value) result.push(s.dataset.folder + ':' + s.value);
+      });
+      return result.join(',');
+    }
+
+    async function createUser() {
+      const fullName = document.getElementById('createUserName').value.trim();
+      const email = document.getElementById('createUserEmail').value.trim();
+      const isAuto = document.querySelector('input[name="pwType"][value="auto"]').checked;
+      const tempPw = isAuto ? generatePassword() : document.getElementById('createUserPassword').value;
+      const makeAdminFlag = document.getElementById('createUserAdmin').checked;
+      const allowedFolders = getSelectedFolders();
+      const msgEl = document.getElementById('createUserMsg');
+      if (!email) { msgEl.className = 'msg error'; msgEl.textContent = 'Email required'; return; }
+      if (!isAuto && !tempPw) { msgEl.className = 'msg error'; msgEl.textContent = 'Password required'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/create', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({email, tempPassword: tempPw, makeAdmin: makeAdminFlag, allowedFolders: allowedFolders, fullName: fullName})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          const welcomeMsg = data.welcomeMessage ? data.welcomeMessage + '\n\nDashboard: ' + window.location.origin : '';
+          msgEl.className = 'msg success';
+          if (welcomeMsg) {
+            msgEl.innerHTML = '✅ User created!<br><br><button class="btn-action" style="font-size:12px;" onclick="navigator.clipboard.writeText(\'' + welcomeMsg.replace(/'/g, "\\'").replace(/\n/g, "\\n") + '\');showToast(\'Welcome message copied!\')">Copy Welcome Message</button> <button class="btn-action success" style="font-size:12px;" onclick="closeCreateUser();loadUsers();">Continue</button>';
+          } else {
+            msgEl.innerHTML = '✅ User created! <button class="btn-action success" style="font-size:12px;" onclick="closeCreateUser();loadUsers();">Continue</button>';
+          }
+          document.getElementById('createUserName').value = '';
+          document.getElementById('createUserEmail').value = '';
+          document.getElementById('createUserPassword').value = '';
+          document.getElementById('createUserAdmin').checked = false;
+        } else { msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Failed to create user'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    function toggleSelectAllUsers(cb) {
+      document.querySelectorAll('.user-select-cb').forEach(c => c.checked = cb.checked);
+      updateDeleteBtn();
+    }
+
+    function updateDeleteBtn() {
+      const checked = document.querySelectorAll('.user-select-cb:checked').length;
+      const actBtn = document.getElementById('actionsBtn');
+      if (checked > 0) {
+        actBtn.style.opacity = '1'; actBtn.style.pointerEvents = 'auto';
+      } else {
+        actBtn.style.opacity = '0.4'; actBtn.style.pointerEvents = 'none';
+        document.getElementById('actionsMenu').style.display = 'none';
+      }
+    }
+
+    function toggleActionsMenu() {
+      const menu = document.getElementById('actionsMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function getSelectedUser() {
+      const checked = document.querySelectorAll('.user-select-cb:checked');
+      if (checked.length !== 1) { alert('Please select exactly one user for this action.'); return null; }
+      return { username: checked[0].value, email: checked[0].dataset.email };
+    }
+
+    function actionOnSelected(action) {
+      document.getElementById('actionsMenu').style.display = 'none';
+      const sel = getSelectedUser();
+      if (!sel) return;
+      if (action === 'make-admin') makeAdmin(sel.username);
+      else if (action === 'remove-admin') removeAdmin(sel.username);
+      else if (action === 'edit-access') editAccess(sel.username, '');
+      else if (action === 'change-email') changeEmail(sel.username, sel.email);
+      else if (action === 'disable') disableUser(sel.username);
+      else if (action === 'enable') enableUser(sel.username);
+      else if (action === 'reset-mfa') resetMfa(sel.username);
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#actionsBtn') && !e.target.closest('#actionsMenu')) {
+        document.getElementById('actionsMenu').style.display = 'none';
+      }
+    });
+
+    async function deleteSelectedUsers() {
+      const checked = document.querySelectorAll('.user-select-cb:checked');
+      if (!checked.length) return;
+      const emails = Array.from(checked).map(c => c.dataset.email).join(', ');
+      if (!confirm('Permanently delete ' + checked.length + ' user(s)?\n\n' + emails + '\n\nThis cannot be undone.')) return;
+      for (const cb of checked) {
+        try {
+          await apiFetch(CONFIG.apiEndpoint + '/dashboard/users/delete', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+            body: JSON.stringify({username: cb.value})
+          });
+        } catch (e) { /* continue with others */ }
+      }
+      showToast(checked.length + ' user(s) deleted', 'success');
+      loadUsers();
+    }
+
+    async function disableUser(username) {
+      if (!confirm('Disable this user? They will not be able to log in.')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/disable', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('User disabled', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to disable user'); }
+    }
+
+    async function enableUser(username) {
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/enable', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('User enabled', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to enable user'); }
+    }
+
+    async function deleteUser(username, email) {
+      if (!confirm('Permanently delete user "' + email + '"?\n\nThis cannot be undone.')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/delete', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('User deleted', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to delete user'); }
+    }
+
+    async function resetMfa(username) {
+      if (!confirm('Reset MFA for this user? They will need to set up their authenticator app again on next login.')) return;
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/users/reset-mfa', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('MFA reset successfully', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to reset MFA'); }
+    }
+
+    async function makeAdmin(username) {
+      if (!confirm('Promote this user to admin?')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/make-admin', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('User promoted to admin', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to promote user'); }
+    }
+
+    async function removeAdmin(username) {
+      if (!confirm('Remove admin role from this user?')) return;
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/remove-admin', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username})
+        });
+        if (resp.ok) { showToast('Admin role removed', 'success'); loadUsers(); }
+        else { const data = await resp.json(); alert(data.error || 'Failed'); }
+      } catch (e) { alert('Failed to remove admin role'); }
+    }
+
+    let editingUsername = '';
+
+    function changeEmail(username, currentEmail) {
+      document.getElementById('changeEmailModal').classList.remove('hidden');
+      document.getElementById('changeEmailMsg').textContent = '';
+      document.getElementById('changeEmailCurrent').textContent = currentEmail;
+      document.getElementById('changeEmailNew').value = '';
+      document.getElementById('changeEmailPassword').value = '';
+      document.getElementById('changeEmailModal').dataset.username = username;
+    }
+
+    function closeChangeEmail() { document.getElementById('changeEmailModal').classList.add('hidden'); }
+
+    async function submitChangeEmail() {
+      const username = document.getElementById('changeEmailModal').dataset.username;
+      const newEmail = document.getElementById('changeEmailNew').value.trim();
+      const tempPw = document.getElementById('changeEmailPassword').value;
+      const msgEl = document.getElementById('changeEmailMsg');
+      if (!newEmail || !tempPw) { msgEl.className = 'msg error'; msgEl.textContent = 'New email and temp password required'; return; }
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/users/change-email', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username, newEmail, tempPassword: tempPw})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          const welcomeMsg = data.welcomeMessage ? data.welcomeMessage + '\n\nDashboard: ' + window.location.origin : '';
+          msgEl.className = 'msg success';
+          msgEl.innerHTML = '✅ Email changed!<br><br><button class="btn-action" style="font-size:12px;" onclick="navigator.clipboard.writeText(\'' + welcomeMsg.replace(/'/g, "\\'").replace(/\n/g, "\\n") + '\');showToast(\'Message copied!\')">Copy Welcome Message</button> <button class="btn-action success" style="font-size:12px;" onclick="closeChangeEmail();loadUsers();">Continue</button>';
+        } else { msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Failed'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    async function editAccess(username, currentFolders) {
+      editingUsername = username;
+      document.getElementById('createUserModal').classList.remove('hidden');
+      document.getElementById('createUserMsg').textContent = '';
+      document.querySelector('#createUserModal h3').textContent = 'Edit Folder Access';
+      // Hide everything except email and folder tree
+      document.getElementById('createUserName').style.display = 'none';
+      document.getElementById('createUserEmail').value = username;
+      document.getElementById('createUserEmail').disabled = true;
+      document.getElementById('passwordSection').style.display = 'none';
+      document.getElementById('adminCheckSection').style.display = 'none';
+      document.getElementById('pwHint').style.display = 'none';
+      // Change button to update
+      const btnCreate = document.querySelector('#createUserModal .btn:not(.btn-cancel)');
+      btnCreate.textContent = 'Update Access';
+      btnCreate.onclick = updateAccess;
+      const tree = document.getElementById('folderTree');
+      await loadFolderTree('', 0, tree);
+      // Pre-select current permissions on visible folders
+      if (currentFolders) {
+        const entries = currentFolders.split(',').map(f => f.trim());
+        tree.querySelectorAll('.folder-access-select').forEach(sel => {
+          entries.forEach(entry => {
+            const parts = entry.split(':');
+            const folder = parts[0];
+            const perm = parts[1] || 'full';
+            if (sel.dataset.folder === folder) sel.value = perm;
+          });
+        });
+      }
+    }
+
+    async function updateAccess() {
+      const allowedFolders = getSelectedFolders();
+      const msgEl = document.getElementById('createUserMsg');
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/dashboard/users/update-access', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({username: editingUsername, allowedFolders: allowedFolders})
+        });
+        if (resp.ok) {
+          msgEl.className = 'msg success'; msgEl.textContent = 'Access updated!';
+          setTimeout(() => { resetCreateModal(); loadUsers(); }, 1500);
+        } else { const data = await resp.json(); msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Failed'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    function resetCreateModal() {
+      document.getElementById('createUserModal').classList.add('hidden');
+      document.getElementById('createUserEmail').disabled = false;
+      document.getElementById('createUserEmail').value = '';
+      document.getElementById('createUserName').value = '';
+      document.getElementById('createUserName').style.display = '';
+      document.getElementById('passwordSection').style.display = '';
+      document.getElementById('customPwSection').style.display = 'none';
+      document.getElementById('createUserPassword').value = '';
+      document.getElementById('adminCheckSection').style.display = '';
+      document.getElementById('createUserAdmin').checked = false;
+      document.getElementById('pwHint').style.display = '';
+      document.querySelector('input[name="pwType"][value="auto"]').checked = true;
+      const btnCreate = document.querySelector('#createUserModal .btn:not(.btn-cancel)');
+      btnCreate.textContent = 'Create User';
+      btnCreate.onclick = createUser;
+      document.querySelector('#createUserModal h3').textContent = 'Create New User';
+      editingUsername = '';
+    }
+
+    // Activity Log
+    let allActivities = [];
+
+    async function loadHome() {
+      const container = document.getElementById('homeContent');
+      showLoading('homeContent');
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/home', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const userName = sessionStorage.getItem('cs_name') || sessionStorage.getItem('cs_email') || '';
+        const today = new Date().toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'});
+        const actionIcons = {'Uploaded': '📤', 'Downloaded': '📥', 'Viewed': '📄', 'Deleted': '🗑️', 'Restored': '♻️', 'Created': '📁', 'Created User': '👤', 'Disabled User': '🚫', 'Enabled User': '✅', 'Deleted User': '❌', 'Made Admin': '⭐', 'Removed Admin': '👤', 'Updated Access': '🔒', 'Changed Email': '📧', 'Reset MFA': '🔐', 'Login (MFA)': '🔑', 'Login': '🔑'};
+        let html = '<div class="home-greeting">Welcome back, ' + userName + ' 👋</div>';
+        html += '<div class="home-date">' + today + '</div>';
+        html += '<div class="home-summary">';
+        html += '<div class="home-stat"><div class="stat-icon">📂</div><div class="stat-num">' + data.folders + '</div><div class="stat-label">Folders accessible</div></div>';
+        html += '<div class="home-stat"><div class="stat-icon">📄</div><div class="stat-num">' + data.files + '</div><div class="stat-label">Files in storage</div></div>';
+        html += '<div class="home-stat"><div class="stat-icon">📤</div><div class="stat-num">' + data.uploadsThisWeek + '</div><div class="stat-label">Uploads this week</div></div>';
+        html += '</div>';
+        html += '<div class="home-section-title">Your Recent Activity (Last 7 Days)</div>';
+        html += '<div class="home-activity">';
+        if (data.recentActivity && data.recentActivity.length > 0) {
+          data.recentActivity.forEach(a => {
+            const icon = actionIcons[a.action] || '📋';
+            const timeAgo = getTimeAgo(a.timestamp);
+            html += '<div class="home-activity-item"><div class="act-icon">' + icon + '</div><div><div class="act-text">' + a.action + (a.detail ? ' — ' + a.detail : '') + '</div><div class="act-time">' + timeAgo + '</div></div></div>';
+          });
+          html += '<div style="text-align:right;margin-top:12px;"><button class="link-btn" onclick="showTab(\'activity\')">View All Activity →</button></div>';
+        } else {
+          html += '<div style="text-align:center;padding:24px;color:#94a3b8;"><div style="font-size:32px;margin-bottom:8px;">📂</div><p>No recent activity</p><p style="margin-top:8px;">Get started by creating a folder or uploading your first file.</p><div style="margin-top:12px;"><button class="empty-action-btn" onclick="showTab(\'storage\')">📂 Browse Files</button> <button class="empty-action-btn" onclick="showTab(\'upload-storage\')">📤 Upload File</button></div></div>';
+        }
+        html += '</div>';
+        html += '<div class="home-security">🔒 Your files are encrypted and protected with enterprise-grade security.</div>';
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load home</p></div>';
+      }
+    }
+
+    function getTimeAgo(timestamp) {
+      const now = new Date();
+      const then = new Date(timestamp);
+      const diff = Math.floor((now - then) / 1000);
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return Math.floor(diff/60) + ' minutes ago';
+      if (diff < 86400) return Math.floor(diff/3600) + ' hours ago';
+      if (diff < 172800) return 'Yesterday';
+      if (diff < 604800) return Math.floor(diff/86400) + ' days ago';
+      return then.toLocaleDateString();
+    }
+
+    function loadCredentialReportStatus() {
+      const statusEl = document.getElementById('credentialReportStatus');
+      const actionsEl = document.getElementById('credentialReportActions');
+      if (cachedCredentialReport && cachedCredentialReportTime) {
+        statusEl.innerHTML = '<p style="color:#16a34a;font-size:14px;font-weight:600;">📋 Last generated: ' + cachedCredentialReportTime + '</p>';
+        actionsEl.innerHTML = '<button class="btn-create" style="background:#16a34a;" onclick="downloadCredentialReport(\'csv\')">Download CSV</button> <button class="btn-create" style="background:#7c3aed;" onclick="downloadCredentialReport(\'pdf\')">Download PDF</button> <button class="btn-create" style="background:#475569;" onclick="generateCredentialReport()">Generate New Report</button>';
+      } else {
+        statusEl.innerHTML = '';
+        actionsEl.innerHTML = '<button class="btn-create" onclick="generateCredentialReport()">Generate Credential Report</button>';
+      }
+    }
+
+    async function generateCredentialReport() {
+      const statusEl = document.getElementById('credentialReportStatus');
+      statusEl.innerHTML = '<div class="loading-overlay" style="padding:16px;"><div class="spinner"></div><p>Generating report...</p></div>';
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/users', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        if (!resp.ok) { throw new Error('API returned ' + resp.status); }
+        const data = await resp.json();
+        cachedCredentialReport = data.users || [];
+        cachedCredentialReportTime = new Date().toLocaleString();
+        loadCredentialReportStatus();
+        showToast('Report generated', 'success');
+      } catch (e) {
+        console.log('Credential report error:', e);
+        statusEl.innerHTML = '<p style="color:#dc2626;font-size:14px;">Failed to generate report. ' + e.message + '</p>';
+      }
+    }
+
+    function downloadCredentialReport(format) {
+      if (!cachedCredentialReport || !cachedCredentialReport.length) { alert('No report data. Generate a report first.'); return; }
+      const data = cachedCredentialReport;
+      if (format === 'csv') {
+        let csv = 'Name,Email,Role,MFA Status,Folder Access,Status,Last Login,Created\n';
+        data.forEach(u => {
+          const mfa = u.mfaEnabled ? 'Enabled' : 'Not Set Up';
+          const status = u.enabled ? 'Active' : 'Disabled';
+          const ll = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+          const dt = u.created ? new Date(u.created).toLocaleDateString() : '-';
+          csv += '"' + (u.name||'-') + '","' + u.email + '","' + u.role + '","' + mfa + '","' + (u.allowedFolders||'Full Access') + '","' + status + '","' + ll + '","' + dt + '"\n';
+        });
+        downloadBlob(new Blob([csv], {type: 'text/csv'}), 'user-credential-report.csv');
+      } else if (format === 'pdf') {
+        const win = window.open('', '_blank');
+        let html = '<html><head><title>User Credential Report</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;font-size:11px;}th{background:#1e40af;color:#fff;}</style></head><body>';
+        html += '<h2>User Credential Report</h2><p>Generated: ' + cachedCredentialReportTime + ' | Total Users: ' + data.length + '</p>';
+        html += '<table><tr><th>Name</th><th>Email</th><th>Role</th><th>MFA</th><th>Folder Access</th><th>Status</th><th>Last Login</th><th>Created</th></tr>';
+        data.forEach(u => {
+          const mfa = u.mfaEnabled ? 'Enabled' : 'Not Set Up';
+          const status = u.enabled ? 'Active' : 'Disabled';
+          const ll = u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never';
+          const dt = u.created ? new Date(u.created).toLocaleDateString() : '-';
+          html += '<tr><td>' + (u.name||'-') + '</td><td>' + u.email + '</td><td>' + u.role + '</td><td>' + mfa + '</td><td>' + (u.allowedFolders||'Full Access') + '</td><td>' + status + '</td><td>' + ll + '</td><td>' + dt + '</td></tr>';
+        });
+        html += '</table></body></html>';
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => { win.print(); }, 500);
+      }
+    }
+
+    async function loadSnapshot() {
+      const container = document.getElementById('snapshotContent');
+      try {
+        showLoading('snapshotContent');
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/snapshot', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const formatSize = (bytes) => {
+          if (bytes >= 1073741824) return (bytes/1073741824).toFixed(2) + ' GB';
+          if (bytes >= 1048576) return (bytes/1048576).toFixed(1) + ' MB';
+          if (bytes >= 1024) return (bytes/1024).toFixed(1) + ' KB';
+          return bytes + ' B';
+        };
+        const buildGraph = (items, nameKey, title, colors) => {
+          if (!items || !items.length) return '';
+          const maxVal = Math.max(...items.map(i => i.size));
+          const totalVal = items.reduce((s, i) => s + i.size, 0);
+          // Y-axis scale
+          const steps = 5;
+          const stepVal = maxVal / steps;
+          const chartHeight = 200;
+          let html = '<div style="margin-top:24px;"><h3 style="color:#1e40af;font-size:18px;margin-bottom:8px;">' + title + '</h3>';
+          html += '<div class="graph-container"><div class="graph">';
+          // Y-axis
+          html += '<div class="graph-y-axis">';
+          for (let i = steps; i >= 0; i--) {
+            html += '<div class="graph-y-label">' + formatSize(stepVal * i) + '</div>';
+          }
+          html += '</div>';
+          // Body with gridlines and bars
+          html += '<div class="graph-body" style="height:' + chartHeight + 'px;">';
+          for (let i = 0; i <= steps; i++) {
+            const top = (i / steps) * 100;
+            html += '<div class="graph-gridline" style="top:' + top + '%;"></div>';
+          }
+          html += '<div class="graph-bars">';
+          items.forEach((item, idx) => {
+            const height = maxVal > 0 ? Math.max((item.size / maxVal) * chartHeight, 4) : 4;
+            const color = colors[idx % colors.length];
+            const pct = totalVal > 0 ? ((item.size / totalVal) * 100).toFixed(1) + '%' : '0%';
+            html += '<div class="graph-bar"><div class="graph-bar-value">' + formatSize(item.size) + '</div><div class="graph-bar-block" style="height:' + height + 'px;background:' + color + ';"></div><div class="graph-bar-label" title="' + item[nameKey] + '">' + item[nameKey].replace(/\/$/, '') + '</div><div class="graph-bar-sublabel">' + pct + '</div></div>';
+          });
+          html += '</div></div></div></div>';
+          return html;
+        };
+        let html = '<div class="stat-cards">' +
+          '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Storage</div><div class="stat-value">' + formatSize(data.totalStorage) + '</div></div>' +
+          '<div class="stat-card"><div class="stat-icon">📄</div><div class="stat-label">Object Count</div><div class="stat-value">' + data.objectCount.toLocaleString() + '</div></div>' +
+          '<div class="stat-card"><div class="stat-icon">📐</div><div class="stat-label">Average Object Size</div><div class="stat-value">' + formatSize(data.avgObjectSize) + '</div></div>' +
+          '</div>';
+        const bucketColors = ['#1e40af','#16a34a','#f59e0b','#7c3aed','#dc2626','#0ea5e9'];
+        const folderColors = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#84cc16'];
+        html += buildGraph(data.bucketBreakdown, 'bucket', 'Storage by Bucket', bucketColors);
+        html += buildGraph(data.folderBreakdown, 'folder', 'Storage by Folder', folderColors);
+        container.innerHTML = html;
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load snapshot</p></div>'; }
+    }
+
+    async function loadActivity() {
+      const container = document.getElementById('activityContent');
+      const countEl = document.getElementById('activityCount');
+      try {
+        showLoading('activityContent');
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/activity', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        allActivities = data.activities || [];
+        countEl.textContent = 'Activities (' + allActivities.length + ')';
+        renderActivity(allActivities);
+      } catch (e) { container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load activity log</p></div>'; }
+    }
+
+    function renderActivity(items) {
+      const container = document.getElementById('activityContent');
+      if (!items || items.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>No activity recorded</p></div>'; return; }
+      let html = '<div class="table-container"><table><thead><tr><th>User</th><th>Action</th><th>Detail</th><th>Time</th></tr></thead><tbody>';
+      items.forEach(item => {
+        const dt = item.timestamp ? new Date(item.timestamp).toLocaleString() : '-';
+        const userDisplay = item.email && item.user !== item.email ? item.user + ' (' + item.email + ')' : item.user;
+        html += '<tr><td>' + userDisplay + '</td><td>' + item.action + '</td><td>' + (item.detail || '-') + '</td><td>' + dt + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+    }
+
+    function filterActivity() {
+      const q = document.getElementById('activitySearch').value.toLowerCase();
+      if (!q) { renderActivity(allActivities); return; }
+      renderActivity(allActivities.filter(a =>
+        a.user.toLowerCase().includes(q) || a.action.toLowerCase().includes(q) || (a.detail || '').toLowerCase().includes(q)
+      ));
+    }
+
+    function exportActivity(format) {
+      const data = allActivities;
+      if (!data.length) { alert('No activity to export'); return; }
+      if (format === 'json') {
+        const exported = data.map(a => ({name: a.user, email: a.email || a.user, action: a.action, detail: a.detail, time: a.timestamp}));
+        const blob = new Blob([JSON.stringify(exported, null, 2)], {type: 'application/json'});
+        downloadBlob(blob, 'activity-log.json');
+      } else if (format === 'csv') {
+        let csv = 'Name,Email,Action,Detail,Time\n';
+        data.forEach(a => {
+          csv += '"' + a.user + '","' + (a.email || a.user) + '","' + a.action + '","' + (a.detail||'').replace(/"/g,'""') + '","' + (a.timestamp ? new Date(a.timestamp).toLocaleString() : '') + '"\n';
+        });
+        downloadBlob(new Blob([csv], {type: 'text/csv'}), 'activity-log.csv');
+      } else if (format === 'pdf') {
+        const win = window.open('', '_blank');
+        let html = '<html><head><title>Activity Log</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;font-size:12px;}th{background:#1e40af;color:#fff;}</style></head><body>';
+        html += '<h2>Activity Log</h2><p>Exported: ' + new Date().toLocaleString() + '</p>';
+        html += '<table><tr><th>Name</th><th>Email</th><th>Action</th><th>Detail</th><th>Time</th></tr>';
+        data.forEach(a => {
+          html += '<tr><td>' + a.user + '</td><td>' + (a.email || a.user) + '</td><td>' + a.action + '</td><td>' + (a.detail||'-') + '</td><td>' + (a.timestamp ? new Date(a.timestamp).toLocaleString() : '-') + '</td></tr>';
+        });
+        html += '</table></body></html>';
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => { win.print(); }, 500);
+      }
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    // Forgot Password
+    function showForgotPassword() {
+      document.getElementById('forgotModal').classList.remove('hidden');
+      document.getElementById('forgotStep1').classList.remove('hidden');
+      document.getElementById('forgotStep2').classList.add('hidden');
+      document.getElementById('forgotMsg').textContent = '';
+      document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value || '';
+    }
+    function closeForgotPassword() { document.getElementById('forgotModal').classList.add('hidden'); }
+
+    async function sendResetCode() {
+      const email = document.getElementById('forgotEmail').value;
+      const msgEl = document.getElementById('forgotMsg');
+      if (!email) { msgEl.className = 'msg error'; msgEl.textContent = 'Please enter your email'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/forgot', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email})
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+          msgEl.className = 'msg success'; msgEl.textContent = 'Code sent to your email';
+          document.getElementById('forgotStep1').classList.add('hidden');
+          document.getElementById('forgotStep2').classList.remove('hidden');
+        } else { msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Failed to send code'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    async function confirmReset() {
+      const email = document.getElementById('forgotEmail').value;
+      const code = document.getElementById('resetCode').value;
+      const pw = document.getElementById('newPassword').value;
+      const cpw = document.getElementById('confirmPassword').value;
+      const msgEl = document.getElementById('forgotMsg');
+      if (!code || !pw) { msgEl.className = 'msg error'; msgEl.textContent = 'Please fill all fields'; return; }
+      if (pw !== cpw) { msgEl.className = 'msg error'; msgEl.textContent = 'Passwords do not match'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/reset', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({email, code, password: pw})
+        });
+        const data = await resp.json();
+        if (resp.ok) { msgEl.className = 'msg success'; msgEl.textContent = 'Password reset! You can now sign in.'; setTimeout(closeForgotPassword, 2000); }
+        else { msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Reset failed'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    // Change Password
+    function showChangePassword() { document.getElementById('changeModal').classList.remove('hidden'); document.getElementById('changeMsg').textContent = ''; }
+    function closeChangePassword() { document.getElementById('changeModal').classList.add('hidden'); }
+
+    async function changePassword() {
+      const oldPw = document.getElementById('currentPassword').value;
+      const newPw = document.getElementById('changeNewPassword').value;
+      const confirmPw = document.getElementById('changeConfirmPassword').value;
+      const msgEl = document.getElementById('changeMsg');
+      if (!oldPw || !newPw) { msgEl.className = 'msg error'; msgEl.textContent = 'Please fill all fields'; return; }
+      if (newPw !== confirmPw) { msgEl.className = 'msg error'; msgEl.textContent = 'Passwords do not match'; return; }
+      if (oldPw === newPw) { msgEl.className = 'msg error'; msgEl.textContent = 'New password must be different from current password'; return; }
+      try {
+        const resp = await fetch(CONFIG.apiEndpoint + '/auth/change-password', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({oldPassword: oldPw, newPassword: newPw})
+        });
+        const data = await resp.json();
+        if (resp.ok) { msgEl.className = 'msg success'; msgEl.textContent = 'Password updated!'; setTimeout(closeChangePassword, 2000); }
+        else { msgEl.className = 'msg error'; msgEl.textContent = data.error || 'Failed to change password'; }
+      } catch (e) { msgEl.className = 'msg error'; msgEl.textContent = 'Connection error'; }
+    }
+
+    // Notifications
+    async function loadNotifications() {
+      if (!isAdmin) return;
+      document.getElementById('notifBell').style.display = 'inline-block';
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/notifications', { headers: {'Authorization': 'Bearer ' + currentToken} });
+        const data = await resp.json();
+        const notifs = data.notifications || [];
+        const unread = notifs.filter(n => !n.read).length;
+        const badge = document.getElementById('notifBadge');
+        if (unread > 0) { badge.textContent = unread; badge.style.display = 'flex'; }
+        else { badge.style.display = 'none'; }
+        const dropdown = document.getElementById('notifDropdown');
+        let html = '<div class="notif-header">Notifications <button class="notif-mark-btn" onclick="markAllRead(event)">Mark All Read</button></div>';
+        if (notifs.length === 0) { html += '<div class="notif-empty">No notifications</div>'; }
+        notifs.forEach(n => {
+          const dt = n.timestamp ? new Date(n.timestamp).toLocaleString() : '';
+          html += '<div class="notif-item ' + (n.read ? '' : 'unread') + '">' + n.message + '<div class="notif-time">' + dt + '</div></div>';
+        });
+        dropdown.innerHTML = html;
+      } catch (e) { /* silent */ }
+    }
+
+    function toggleNotifications(e) {
+      if (e) e.stopPropagation();
+      const dd = document.getElementById('notifDropdown');
+      dd.classList.toggle('open');
+    }
+
+    async function markAllRead(e) {
+      e.stopPropagation();
+      try {
+        const resp = await apiFetch(CONFIG.apiEndpoint + '/dashboard/notifications', {
+          method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + currentToken},
+          body: JSON.stringify({action: 'markAllRead'})
+        });
+        if (resp.ok) {
+          document.getElementById('notifBadge').style.display = 'none';
+          document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+        } else {
+          console.log('Mark all read failed:', await resp.text());
+        }
+      } catch (err) { console.log('Mark all read error:', err); }
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.notif-bell')) document.getElementById('notifDropdown').classList.remove('open');
+    });
+
+    function toggleLoginPw() {
+      const input = document.getElementById('loginPassword');
+      const btn = input.parentElement.querySelector('.pw-toggle');
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁'; }
+    }
+
+    function togglePwField(fieldId, btn) {
+      const input = document.getElementById(fieldId);
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁'; }
+    }
+
+    function checkChangePwMatch() {
+      const pw = document.getElementById('changeNewPassword').value;
+      const confirm = document.getElementById('changeConfirmPassword').value;
+      const status = document.getElementById('changePwMatchStatus');
+      if (!confirm) { status.textContent = ''; return; }
+      if (pw === confirm) { status.textContent = '✅ Passwords match'; status.style.color = '#16a34a'; }
+      else { status.textContent = '❌ Passwords do not match'; status.style.color = '#dc2626'; }
+    }
+
+    document.getElementById('loginPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+name: Terraform Static Code Analysis (KICS - Keeping Infrastructure-as-Code Secure)
+# more details can be found here https://docs.kics.io/latest/
+
+on:
+  workflow_call:
+    inputs:
+      ENABLE_COMMENTS:
+        required: true
+        type: boolean
+      WORKING_DIRECTORY:
+        required: true
+        type: string
+
+jobs:
+  kics:
+    name: Run KICS Code Analysis
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Run KICS Scan
+        uses: checkmarx/kics-github-action@v2.1.20
+        with:
+          enable_comments: ${{ inputs.ENABLE_COMMENTS }}
+          ignore_on_exit: results
+          output_path: scan-results/
+          path: ${{ inputs.WORKING_DIRECTORY }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display KICS results
+        run: cat scan-results/results.json
