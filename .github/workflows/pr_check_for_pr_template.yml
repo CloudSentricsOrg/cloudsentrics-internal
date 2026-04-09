@@ -1,0 +1,17 @@
+name: Check PR Template file exists
+
+on: push
+
+jobs:
+  pester-test:
+    if: startsWith(github.head_ref, 'renovate') == false # skip this step if this is a renovate pull request
+    name: ✅ Check PR Template file exists
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: ⤵ Check out code
+        uses: actions/checkout@v5
+
+      - name: 👀 Search for .github/pull_request_template.md
+        shell: pwsh
+        run: Test-Path .github/pull_request_template.md | Should -Be $true

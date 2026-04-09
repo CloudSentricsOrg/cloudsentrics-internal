@@ -1,0 +1,231 @@
+name: terraform plan
+
+on:
+  workflow_call:
+    inputs:
+      ENVIRONMENT:
+        description: "The target GitHub Environment name"
+        required: true
+        type: string
+      PROXY_IAM_ROLE_ARN:
+        description: "The IAM ARN for the proxy role that will be used to read/modify TF state"
+        required: true
+        type: string
+      WORKER_IAM_ROLE_ARN:
+        description: "The IAM ARN for the worker role that will be used to deploy in the target account"
+        required: true
+        type: string
+      WORKING_DIRECTORY:
+        description: "The directory containing the target terragrunt.hcl configuration file"
+        required: true
+        type: string
+      COMPONENT_NAME:
+        description: "Logical component name (email-otp / whatsapp / storage-only, etc.) to make plan artifacts unique"
+        required: true
+        type: string
+    outputs:
+      CHANGES_PENDING:
+        description: "True if the resulting terraform plan has pending changes, otherwise False."
+        value: ${{ jobs.plan.outputs.CHANGES_PENDING }}
+      PLAN_FILE_ARTIFACT:
+        description: "Name of the GitHub artifact containing the resulting TF plan file"
+        value: ${{ jobs.plan.outputs.PLAN_FILE_ARTIFACT }}
+
+env:
+  AWS_REGION: "us-east-1"
+  TERRAFORM_VERSION: 1.7.4
+  TERRAGRUNT_NON_INTERACTIVE: true
+  TERRAGRUNT_VERSION: 0.56.0
+  TF_CLI_ARGS: "-no-color"
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  plan:
+    name: terraform plan
+    environment: ${{ inputs.ENVIRONMENT }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    outputs:
+      CHANGES_PENDING: ${{ steps.plan.outputs.CHANGES_PENDING }}
+      PLAN_FILE_ARTIFACT: ${{ steps.plan.outputs.PLAN_FILE_ARTIFACT }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Configure Git auth for Terraform modules
+        run: |
+          git config --global url."https://x-access-token:${TERRAFORM_MODULES_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          TERRAFORM_MODULES_TOKEN: ${{ secrets.TERRAFORM_MODULES_TOKEN }}
+
+      #- name: Setting worker role for terragrunt
+      #  run: |
+      #    echo "TERRAGRUNT_IAM_ROLE=${{ inputs.WORKER_IAM_ROLE_ARN }}" >> "$GITHUB_ENV"
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: true
+
+      - name: Setup terragrunt
+        run: |
+          sudo wget -q -O /bin/terragrunt "https://github.com/gruntwork-io/terragrunt/releases/download/v0.56.0/terragrunt_linux_amd64"
+          sudo chmod +x /bin/terragrunt
+          terragrunt -v
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ inputs.PROXY_IAM_ROLE_ARN }}
+
+      - name: terragrunt init
+        id: init
+        continue-on-error: true
+        run: terragrunt init
+
+      - name: Post Init
+        if: steps.init.outcome == 'success' || steps.init.outcome == 'failure'
+        uses: GetTerminus/terraform-pr-commenter@v2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPAND_SUMMARY_DETAILS: true
+        with:
+          commenter_type: init
+          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Exit workflow if 'terragrunt init' failed
+        if: ${{ steps.init.outcome == 'failure' }}
+        run: |
+          echo "::error terragrunt init failed"
+          exit 1
+
+      - name: terragrunt Validate
+        id: validate
+        continue-on-error: true
+        run: terragrunt validate
+
+      - name: Set validate limit character output
+        if: steps.validate.outcome == 'success' || steps.validate.outcome == 'failure'
+        run: |
+          if [[ "${{steps.validate.outcome}}" == "success" ]]; then
+            validate="${{ steps.validate.outputs.stdout }}"
+            { echo "VALIDATE_OUTPUT<<EOF"
+              echo "${validate:0:6000}"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          else
+            validate=$(echo "${{steps.validate.outputs.stderr}}")
+            error_section=$(echo "${validate}" | head -n 100)
+            { echo "VALIDATE_OUTPUT<<EOF"
+              echo "${error_section:0:6000}"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          fi
+      
+      - name: Post Validate
+        if: steps.validate.outcome == 'success' || steps.validate.outcome == 'failure'
+        uses: GetTerminus/terraform-pr-commenter@v2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPAND_SUMMARY_DETAILS: true
+        with:
+          commenter_type: validate
+          commenter_input: ${{ env.VALIDATE_OUTPUT }}
+          commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Exit workflow if 'terragrunt validate' failed
+        if: ${{ steps.validate.outcome == 'failure' }}
+        run: |
+          echo "::error terragrunt validate failed"
+          exit 1
+
+      - name: terragrunt Plan
+        id: plan
+        continue-on-error: true
+        run: |
+          unset output
+
+          planOut="${{ runner.temp }}/tf.plan"
+          planTextOut="${{ runner.temp }}/tf_local.plan"
+          terragrunt plan -out="${planOut}" >/dev/null
+          terragrunt show "${planOut}" | tee "${planTextOut}"
+
+          echo "PLAN_FILE_TEXT_PATH=${planTextOut}" >> "$GITHUB_OUTPUT"
+
+          output=$(< "${planTextOut}")
+          if echo $output | grep 'Your infrastructure matches the configuration.'; then
+            echo "::warning terragrunt plan was empty, setting CHANGES_PENDING=false"
+            echo "CHANGES_PENDING=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning terragrunt plan was non-empty, setting CHANGES_PENDING=true"
+            echo "CHANGES_PENDING=true" >> "$GITHUB_OUTPUT"
+
+            planFileArtifact="tfplan-${{inputs.ENVIRONMENT}}-${{inputs.COMPONENT_NAME}}-pr${{github.event.pull_request.number}}-run${{github.run_number}}-attempt${{github.run_attempt}}.plan"
+            echo "PLAN_FILE_ARTIFACT=${planFileArtifact}" >> "$GITHUB_OUTPUT"
+
+            echo "PLAN_FILE_PATH=${planOut}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # this will set a hard limit of 65000 characters for a successful plan step, and extract up to the first 100 characters from the error output if the plan step fails
+      # this limit also applies to string expansion in workflow steps, i.e. "${{ some_string_value_over_65k_chars }}"
+      # this limit character set does not affect the terragrunt output, which can be viewed in a workflow run#
+      - name: Set plan limit character output
+        if: steps.plan.outcome == 'success' || steps.plan.outcome == 'failure'
+        run: |
+          if [[ "${{steps.plan.outcome}}" == "success" ]]; then
+            plan=$(< "${{steps.plan.outputs.PLAN_FILE_TEXT_PATH}}")
+            { echo "PLAN_OUTPUT<<EOF"
+              echo "${plan:0:65000}"
+              echo "EOF"
+            } | sed 's/^\([ ]\+\)-/-\1/g' >> "$GITHUB_ENV"
+            # the call to sed here is adjusting the diff output so that the deletions (marked with a hyphen) appear at the beginning of the line
+            #   example before: '    - {deleted}'
+            #   example after:  '-     {deleted}'
+            # this allows us to get the proper syntax highlighting in the PR comment
+          else
+            plan=$(echo "${{steps.plan.outputs.stderr}}")
+            error_section=$(echo "${plan}" | sed -n '/^Error:/,$p' | head -n 100)
+            { echo "PLAN_OUTPUT<<EOF"
+              echo "${error_section:0:65000}"
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+          fi
+
+      - name: Upload tf.plan artifact
+        if: ${{ steps.plan.outputs.PLAN_FILE_PATH != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.plan.outputs.PLAN_FILE_ARTIFACT }}
+          path: ${{ steps.plan.outputs.PLAN_FILE_PATH }}
+          retention-days: 5
+
+      - name: Display plan success or failure
+        if: steps.plan.outcome == 'failure' || steps.plan.outcome == 'success'
+        uses: GetTerminus/terraform-pr-commenter@v2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPAND_SUMMARY_DETAILS: "true" # override global environment variable; expand details just for this step
+        with:
+          commenter_type: plan
+          commenter_input: ${{ env.PLAN_OUTPUT }}
+          commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Check plan status
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "::error terragrunt plan failed, see plan output below"
+          echo -e "${{ env.PLAN_OUTPUT }}"
+          exit 1

@@ -1,0 +1,41 @@
+name: Validate ref branch is up-to-date with target branch
+
+on: workflow_call
+
+jobs:
+
+  validate_latest:
+    name: Branch up-to-date check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 #need to get everything, not just pull_request.head.ref, in order to check if up-to-date with target branch
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Check if our source branch is up-to-date with target branch
+        id: validate-branch
+        run: |
+          if ! git merge-base --is-ancestor origin/${{ github.base_ref }} ${{ github.event.pull_request.head.sha }}; then
+            echo "BRANCH_OUT_OF_DATE=true" >> "$GITHUB_OUTPUT"
+            echo "::error source branch is NOT up-to-date with target branch"
+          else
+            echo "::warning source branch is up-to-date with target branch"
+          fi
+
+      - name: Comment on PR
+        if: steps.validate-branch.outputs.BRANCH_OUT_OF_DATE
+        uses: mshick/add-pr-comment@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          allow-repeats: false
+          message: |
+            ***Workflow run has been cancelled because the source branch is not up-to-date with target `origin/${{ github.base_ref }}`***
+
+      - name: Cancel workflow run
+        if: steps.validate-branch.outputs.BRANCH_OUT_OF_DATE
+        run: |
+          echo "::error Source branch is not up to date with origin/${{ github.base_ref }}. Update your branch to initiate the workflow again."
+          exit 1
